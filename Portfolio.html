@@ -1,0 +1,2366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mike Daniels — Design, Animation, Direction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Inter+Tight:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     TWEAKABLE THEME
+     ============================================================ */
+  :root {
+    --bg: #0a0a0a;
+    --fg: #f2f1ec;
+    --fg-dim: rgba(242, 241, 236, 0.5);
+    --fg-faint: rgba(242, 241, 236, 0.15);
+    --accent: #ff6a5c;
+    --line: rgba(242, 241, 236, 0.12);
+  }
+
+  /* Color treatments, toggleable via tweaks */
+  html[data-theme="mono"] {
+    --bg: #0a0a0a; --fg: #f2f1ec;
+    --fg-dim: rgba(242, 241, 236, 0.5);
+    --fg-faint: rgba(242, 241, 236, 0.15);
+    --line: rgba(242, 241, 236, 0.12);
+    --accent: #ff6a5c;
+  }
+  html[data-theme="cream"] {
+    --bg: #13100c; --fg: #f1e7d3;
+    --fg-dim: rgba(241, 231, 211, 0.5);
+    --fg-faint: rgba(241, 231, 211, 0.15);
+    --line: rgba(241, 231, 211, 0.12);
+    --accent: #f1e7d3;
+  }
+  html[data-theme="ice"] {
+    --bg: #070a10; --fg: #e5ecf5;
+    --fg-dim: rgba(229, 236, 245, 0.5);
+    --fg-faint: rgba(229, 236, 245, 0.15);
+    --line: rgba(229, 236, 245, 0.12);
+    --accent: #9ac4ff;
+  }
+  html[data-theme="red"] {
+    --bg: #0a0a0a; --fg: #f2f1ec;
+    --fg-dim: rgba(242, 241, 236, 0.5);
+    --fg-faint: rgba(242, 241, 236, 0.15);
+    --line: rgba(242, 241, 236, 0.12);
+    --accent: #ff4a2b;
+  }
+  html[data-theme="acid"] {
+    --bg: #0a0a0a; --fg: #f2f1ec;
+    --fg-dim: rgba(242, 241, 236, 0.5);
+    --fg-faint: rgba(242, 241, 236, 0.15);
+    --line: rgba(242, 241, 236, 0.12);
+    --accent: #d9ff3e;
+  }
+  html[data-theme="paper"] {
+    --bg: #ebe8e1; --fg: #141310;
+    --fg-dim: rgba(20, 19, 16, 0.55);
+    --fg-faint: rgba(20, 19, 16, 0.18);
+    --line: rgba(20, 19, 16, 0.15);
+    --accent: #141310;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--fg); }
+  html, body { max-width: 100%; overflow-x: clip; }
+  body {
+    font-family: 'Inter Tight', system-ui, sans-serif;
+    font-feature-settings: 'ss01' on, 'cv11' on;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* ============================================================
+     NAV — floats over hero, stays fixed
+     ============================================================ */
+  nav.top {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 24px 32px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    color: var(--fg);
+    mix-blend-mode: difference;
+    pointer-events: none;
+    transition: background-color 0.25s ease, backdrop-filter 0.25s ease, box-shadow 0.25s ease, mix-blend-mode 0s linear 0.25s;
+  }
+  /* Account for fixed nav height so anchor jumps land cleanly below the bar */
+  section[id], footer[id] { scroll-margin-top: 100px; }
+
+  /* When scrolled past the hero, give the nav a subtle dark backdrop + shadow
+     so it reads clearly against bright content. Drop the blend mode so the
+     backdrop actually stays opaque. */
+  nav.top.scrolled {
+    mix-blend-mode: normal;
+    background: rgba(10, 10, 10, 0.72);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background-color 0.25s ease, backdrop-filter 0.25s ease, box-shadow 0.25s ease;
+  }
+  nav.top > * { pointer-events: auto; }
+  nav.top .brand { display: flex; gap: 10px; align-items: center; }
+  nav.top .brand .logo {
+    display: block;
+    height: 52px;
+    width: auto;
+    /* Opt out of the nav's blend-mode so the coral + cream stay true */
+    mix-blend-mode: normal;
+    isolation: isolate;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  nav.top .center { text-align: center; opacity: 0.7; }
+  nav.top .links { display: flex; gap: 24px; justify-content: flex-end; }
+  nav.top a { color: inherit; text-decoration: none; position: relative; }
+  nav.top a:hover { opacity: 0.6; }
+
+  /* Nav search icon */
+  nav.top .nav-search {
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+  }
+  nav.top .nav-search:hover { opacity: 0.6; }
+  nav.top .nav-search svg { width: 16px; height: 16px; display: block; }
+
+  /* =========================================================
+     SEARCH OVERLAY (⌘K palette)
+     ========================================================= */
+  .search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: grid;
+    place-items: start center;
+    padding-top: 14vh;
+    background: rgba(5, 5, 5, 0.55);
+    backdrop-filter: blur(8px) saturate(1.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .search-overlay[data-open="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .search-panel {
+    width: min(640px, calc(100vw - 48px));
+    background: #0c0c0c;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    overflow: hidden;
+    transform: translateY(-8px);
+    transition: transform 0.2s ease;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  .search-overlay[data-open="true"] .search-panel { transform: translateY(0); }
+  .search-input-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .search-input-row svg {
+    width: 16px; height: 16px;
+    color: var(--fg-dim);
+  }
+  .search-input-row input {
+    background: none;
+    border: 0;
+    outline: 0;
+    color: var(--fg);
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    padding: 2px 0;
+    width: 100%;
+  }
+  .search-input-row input::placeholder { color: var(--fg-faint); }
+  .search-input-row kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--fg-dim);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 2px 6px;
+  }
+  .search-results {
+    max-height: 52vh;
+    overflow-y: auto;
+  }
+  .search-results:empty::after {
+    content: "No projects match. Try ‘sonic’ or ‘netflix’.";
+    display: block;
+    padding: 28px 18px;
+    font-size: 11px;
+    color: var(--fg-faint);
+    letter-spacing: 0.04em;
+  }
+  .search-result {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 16px 18px;
+    min-height: 64px;
+    border-bottom: 1px solid rgba(242, 241, 236, 0.06);
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--fg);
+    overflow: hidden;
+    isolation: isolate;
+  }
+  /* Dreamy blurred thumbnail as the entire row background */
+  .search-result .thumb {
+    position: absolute;
+    inset: -12%;
+    background: #1a1a1a center/cover no-repeat;
+    filter: blur(18px) saturate(1.25);
+    opacity: 0.95;
+    z-index: -2;
+    transition: opacity 0.2s ease, filter 0.3s ease;
+  }
+  /* Dark gradient wash so text always stays legible over any frame */
+  .search-result::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to right,
+      rgba(12, 12, 12, 0.6) 0%,
+      rgba(12, 12, 12, 0.25) 55%,
+      rgba(12, 12, 12, 0.1) 100%
+    );
+    z-index: -1;
+    pointer-events: none;
+  }
+  .search-result:last-child { border-bottom: 0; }
+  .search-result.active .thumb,
+  .search-result:hover .thumb {
+    opacity: 1;
+    filter: blur(14px) saturate(1.4);
+  }
+  .search-result .rtitle {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .search-result .rmeta {
+    font-size: 10px;
+    color: var(--fg-dim);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .search-result mark {
+    background: var(--accent);
+    color: var(--bg);
+    padding: 0 1px;
+    border-radius: 1px;
+  }
+  .search-footer {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 18px;
+    border-top: 1px solid var(--line);
+    font-size: 10px;
+    color: var(--fg-faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .search-footer kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-dim);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin: 0 2px;
+  }
+
+  /* ============================================================
+     HERO — full-bleed reel, sticky parallax
+     ============================================================ */
+  .hero {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+  }
+  .hero-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+  }
+  .reel-wrap {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .reel-wrap video,
+  .reel-wrap iframe,
+  .reel-wrap .placeholder {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    will-change: transform, opacity;
+  }
+  /* Vimeo background iframe: fill the hero fully, centered, overflow hidden
+     on the wrapper trims any extra from the 16:9 aspect */
+  .reel-wrap iframe {
+    pointer-events: none;
+    position: absolute;
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: max(100vw, calc(100vh * 16 / 9));
+    height: max(100vh, calc(100vw * 9 / 16));
+  }
+  /* Animated placeholder while/if video is missing */
+  .placeholder {
+    background: #000;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  .placeholder::before {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(255,255,255,0.08), transparent 40%),
+      radial-gradient(ellipse at 70% 60%, rgba(255,255,255,0.05), transparent 40%),
+      repeating-linear-gradient(
+        0deg,
+        rgba(255,255,255,0.015) 0 2px,
+        transparent 2px 4px
+      );
+    animation: drift 16s linear infinite;
+  }
+  @keyframes drift {
+    0% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(-2%, 1%) scale(1.05); }
+    100% { transform: translate(0,0) scale(1); }
+  }
+  .placeholder-grid {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 1px;
+    background: rgba(255,255,255,0.04);
+    opacity: 0.5;
+  }
+  .placeholder-grid > div {
+    background: #0a0a0a;
+    overflow: hidden;
+    position: relative;
+  }
+  .placeholder-grid > div::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%);
+    animation: shimmer 8s linear infinite;
+  }
+  .placeholder-grid > div:nth-child(2n)::after { animation-delay: -1.5s; }
+  .placeholder-grid > div:nth-child(3n)::after { animation-delay: -3s; }
+  .placeholder-grid > div:nth-child(5n)::after { animation-delay: -5s; }
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* Hero overlay UI */
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 96px 32px 80px;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .hero-overlay > * { pointer-events: auto; }
+
+  /* Scrim behind the bottom meta block so it doesn't overlap video content.
+     Subtle, only covers the corner where text lives. */
+  .hero-overlay::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 180px;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.55) 0%,
+      rgba(0, 0, 0, 0.25) 45%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+  .hero-overlay > * { position: relative; z-index: 1; }
+
+  .hero-title {
+    font-family: 'Inter Tight', sans-serif;
+    font-weight: 300;
+    font-size: clamp(40px, 9vw, 144px);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    color: var(--fg);
+    mix-blend-mode: difference;
+    max-width: 14ch;
+  }
+  .hero-title em {
+    font-style: normal;
+    font-weight: 500;
+    font-family: 'Inter Tight', serif;
+  }
+
+  .hero-footer {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    align-items: end;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg);
+    mix-blend-mode: difference;
+  }
+  .hero-footer .label {
+    display: block;
+    opacity: 0.5;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .hero-footer .value {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  /* Strip styles removed — back to overlay treatment */
+
+  /* SCROLL cue lives at the right end of the hero footer row
+     so it baseline-aligns with the credits on the left */
+  .scroll-cue {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--fg);
+    mix-blend-mode: difference;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+  .scroll-cue .line {
+    width: 1px;
+    height: 32px;
+    background: currentColor;
+    opacity: 0.6;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, 6px); }
+  }
+
+  /* Play control */
+  .audio-toggle {
+    position: absolute;
+    bottom: 32px;
+    right: 32px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg);
+    mix-blend-mode: difference;
+    background: none;
+    border: 1px solid currentColor;
+    padding: 10px 14px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-radius: 999px;
+    transition: opacity 0.2s;
+  }
+  .audio-toggle:hover { opacity: 0.7; }
+  .audio-toggle .ico {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* ============================================================
+     SECTION HEADER BAR (sticky meta strip)
+     ============================================================ */
+  .meta-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 32px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .meta-bar .center { text-align: center; color: var(--fg); }
+  .meta-bar .right { text-align: right; }
+
+  /* Page divider between major sections */
+  hr.section-rule {
+    border: 0;
+    border-top: 1px solid var(--line);
+    margin: 0;
+    height: 0;
+  }
+
+  /* Work tabs in the meta-bar */
+  .work-tabs .tab-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .work-tabs .tab {
+    background: transparent;
+    border: 1px solid var(--line);
+    padding: 5px 12px;
+    margin: 0;
+    border-radius: 999px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--fg-dim);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    pointer-events: auto;
+  }
+  .work-tabs .tab:hover {
+    color: var(--fg);
+    border-color: var(--fg-dim);
+  }
+  .work-tabs .tab.active {
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .work-tabs .tab-sep {
+    display: none;
+  }
+
+  /* View toggle (grid / line) on the right of the work meta-bar */
+  .work-tabs > .right { display: flex; justify-content: flex-end; }
+  .view-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .view-toggle .vt-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    padding: 5px 12px 5px 10px;
+    margin: 0;
+    border-radius: 999px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--fg-dim);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+    pointer-events: auto;
+  }
+  .view-toggle .vt-btn:hover {
+    color: var(--fg);
+    border-color: var(--fg-dim);
+  }
+  .view-toggle .vt-btn.active {
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .view-toggle .vt-ico {
+    width: 12px; height: 12px;
+    display: inline-grid;
+    gap: 1.5px;
+  }
+  .view-toggle .vt-grid { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+  .view-toggle .vt-line { grid-template-rows: 1fr 1fr 1fr; gap: 2px; }
+  .view-toggle .vt-ico span { display: block; background: currentColor; }
+
+  /* Fade transition between sets */
+  .work-set {
+    transition: opacity 0.25s ease;
+  }
+  .work-set[hidden] { display: none; }
+  .work-set.fading { opacity: 0; }
+
+  /* LINE VIEW — stacked, one-per-line with thumbnail on the left */
+  .project-grid.is-line {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .project-grid.is-line .project {
+    position: relative;
+    display: grid;
+    grid-template-columns: 380px 1fr auto;
+    align-items: stretch;
+    gap: 0 60px;
+    padding: 0 2px;
+    height: 140px;
+    overflow: hidden;
+  }
+  /* Thumbnail: height fills the 140px row; width is the image's natural width
+     at that height, so nothing crops horizontally. Only top/bottom may crop. */
+  .project-grid.is-line .project-media,
+  .project-grid.is-line .project.wide .project-media {
+    aspect-ratio: auto;
+    height: 140px;
+    max-height: 140px;
+    width: auto;
+    border: 0;
+    background: transparent;
+    justify-self: start;
+    overflow: visible;
+  }
+  .project-grid.is-line .project-media .ph-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 140px;
+    width: 240px;
+    width: var(--img-w, 240px);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: left center;
+    -webkit-mask-image: linear-gradient(100deg, #000 45%, rgba(0,0,0,0) 95%);
+            mask-image: linear-gradient(100deg, #000 45%, rgba(0,0,0,0) 95%);
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease;
+    z-index: 1;
+  }
+  .project-grid.is-line .project-media {
+    position: relative;
+    width: var(--img-w, 240px);
+    height: 140px;
+  }
+  .project-grid.is-line .project-media video {
+    position: relative;
+    inset: auto;
+    height: 100%;
+    width: auto;
+  }
+  .project-grid.is-line .project-media .ph-img,
+  .project-grid.is-line .project-media video {
+    transform: scale(1);
+    transform-origin: left center;
+  }
+  /* Neutralize grid-view hover zoom in line view */
+  .project-grid.is-line .project:hover .project-media .ph-img,
+  .project-grid.is-line .project:hover .project-media video {
+    transform: scale(1);
+  }
+  .project-grid.is-line .project.wide { grid-column: auto; }
+  .project-grid.is-line .project-meta {
+    display: contents;
+  }
+  .project-grid.is-line .project-meta .left {
+    grid-column: 2;
+    padding: 0;
+    margin-left: 0;
+    align-self: center;
+    position: relative;
+    z-index: 2;
+    transition: opacity 0.6s cubic-bezier(0.33, 1, 0.68, 1);
+  }
+  .project-grid.is-line .project-meta .right {
+    /* Absolute from the start so we can transition left/top on hover
+       without changing position type (which would cause a pop). */
+    position: absolute;
+    right: 0;                    /* flush with .project's right edge */
+    top: 50%;
+    transform: translateY(-50%);
+    left: auto;
+    padding: 0;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+    z-index: 2;
+    transition: opacity 0.4s ease,
+                left 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                top 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                right 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+                color 0.3s ease;
+  }
+  .project-grid.is-line .project:hover .project-meta .left,
+  .project-grid.is-line .project:hover .project-meta .right {
+    /* opacity now managed per hover-variant below */
+  }
+  .project-grid.is-line .project:hover { transform: none; }
+
+  /* ---- Hover variant A: GROW (default) ---- */
+  /* Image grows to ~62.5vw; title slides right to clear it; description drops below */
+  html[data-line-hover="grow"] .project-grid.is-line .project:hover .project-media .ph-img {
+    width: calc(56vw - 34px);
+    filter: brightness(1.08) saturate(1.05);
+    /* Fixed-width fade on the right edge so it feels like a traveling falloff
+       rather than a proportional fade. ~160px of soft edge. */
+    -webkit-mask-image: linear-gradient(
+      to right,
+      #000 0,
+      #000 calc(100% - 160px),
+      rgba(0,0,0,0) 100%
+    );
+            mask-image: linear-gradient(
+      to right,
+      #000 0,
+      #000 calc(100% - 160px),
+      rgba(0,0,0,0) 100%
+    );
+  }
+  /* Title: slide right to clear the expanded image */
+  html[data-line-hover="grow"] .project-grid.is-line .project .project-meta .left {
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  html[data-line-hover="grow"] .project-grid.is-line .project:hover .project-meta .left {
+    /* Col 2 origin = 380px + 60px gap = 440px. Target: just past the expanded
+       image (62.5vw - 38px) + 40px breathing room. */
+    transform: translateX(calc(56vw - 434px));
+    /* Let title escape col 2's width constraint (which is clipped to the
+       remaining track by the narrow grid). */
+    width: max-content;
+    max-width: calc(44vw - 80px);
+  }
+  html[data-line-hover="grow"] .project-grid.is-line .project:hover .project-meta .left .title {
+    overflow: visible;
+    text-overflow: clip;
+  }
+  /* Description: on hover, slide from right-center to under-title */
+  html[data-line-hover="grow"] .project-grid.is-line .project:hover .project-meta .right {
+    /* left edge aligned with title's new left edge (see title math above) */
+    left: calc(56vw + 6px);
+    top: calc(50% + 18px);
+    right: auto;
+    transform: translateY(0);
+    text-align: left;
+  }
+  /* Fade out title + right meta on hover */
+  .project-grid.is-line .project .project-meta {
+    transition: opacity 0.3s ease;
+    position: relative;
+    z-index: 2;
+  }
+  html[data-line-hover="grow"] .project-grid.is-line .project:hover .project-meta {
+    /* meta stays visible in grow mode; title slides right, desc drops under */
+  }
+
+  /* ---- Hover variant B: CROSSFADE ---- */
+  /* A full-bleed image layer sits behind the row and fades in on hover.
+     The small thumb stays put (no width animation), meta stays visible but dims. */
+  html[data-line-hover="crossfade"] .project-grid.is-line .project {
+    position: relative;
+    isolation: isolate;
+  }
+  html[data-line-hover="crossfade"] .project-grid.is-line .project::before {
+    content: "";
+    position: absolute;
+    inset: 0 -32px; /* bleed to grid padding edge */
+    background-image: var(--thumb-src);
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+    pointer-events: none;
+    z-index: 0;
+    /* Soft right-edge falloff so it doesn't hit the viewport edge hard;
+       left side is full strength so the big image reads crisp */
+    -webkit-mask-image: linear-gradient(100deg, #000 0%, #000 75%, rgba(0,0,0,0) 100%);
+            mask-image: linear-gradient(100deg, #000 0%, #000 75%, rgba(0,0,0,0) 100%);
+  }
+  html[data-line-hover="crossfade"] .project-grid.is-line .project:hover::before {
+    opacity: 1;
+  }
+  /* Fade out the small left thumb on hover — the big overlay replaces it */
+  html[data-line-hover="crossfade"] .project-grid.is-line .project .project-media .ph-img {
+    transition: opacity 0.4s cubic-bezier(0.33, 1, 0.68, 1), filter 0.4s ease;
+  }
+  html[data-line-hover="crossfade"] .project-grid.is-line .project:hover .project-media .ph-img {
+    opacity: 0;
+  }
+  /* In crossfade mode, title + desc fade out as the big overlay takes over */
+  html[data-line-hover="crossfade"] .project-grid.is-line .project:hover .project-meta .left {
+    opacity: 0;
+  }
+  html[data-line-hover="crossfade"] .project-grid.is-line .project:hover .project-meta .right {
+    opacity: 0;
+  }
+  /* --- Line view responsive stack ---
+     At <=900px the image column would crowd text. Stack: thumbnail on top,
+     title + desc underneath. Kill all the viewport-driven grow transforms. */
+  @media (max-width: 900px) {
+    .project-grid.is-line .project {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto;
+      gap: 12px 0;
+      height: auto;
+      min-height: auto;
+      padding: 8px 2px 20px;
+      overflow: hidden;
+    }
+    .project-grid.is-line .project-media,
+    .project-grid.is-line .project.wide .project-media {
+      width: 100%;
+      height: 180px;
+      max-height: 180px;
+    }
+    .project-grid.is-line .project-media .ph-img {
+      width: 100%;
+      height: 180px;
+      background-position: center;
+      -webkit-mask-image: none;
+              mask-image: none;
+    }
+    /* Place meta: title on its own row, desc below */
+    .project-grid.is-line .project-meta .left {
+      grid-column: 1;
+      grid-row: 2;
+      margin-top: 4px;
+    }
+    .project-grid.is-line .project-meta .right {
+      /* Stop being absolute on small screens; flow under title */
+      position: static;
+      grid-column: 1;
+      grid-row: 3;
+      text-align: left;
+      transform: none;
+      top: auto; left: auto; right: auto;
+      margin-top: 4px;
+    }
+    .project-grid.is-line .project-meta .title {
+      font-size: clamp(20px, 5vw, 26px);
+      white-space: normal;
+      text-overflow: clip;
+      overflow: visible;
+    }
+    /* Disable the grow/crossfade hover choreography on small screens — it
+       assumes wide viewports and makes a mess here. */
+    html[data-line-hover="grow"] .project-grid.is-line .project:hover .project-media .ph-img,
+    html[data-line-hover="grow"] .project-grid.is-line .project:hover .project-meta .left,
+    html[data-line-hover="grow"] .project-grid.is-line .project:hover .project-meta .right {
+      width: 100%;
+      max-width: 100%;
+      transform: none;
+      left: auto; top: auto; right: auto;
+      position: static;
+      grid-column: 1;
+      -webkit-mask-image: none;
+              mask-image: none;
+    }
+    html[data-line-hover="grow"] .project-grid.is-line .project:hover .project-meta .right {
+      grid-row: 3;
+    }
+    html[data-line-hover="crossfade"] .project-grid.is-line .project::before {
+      display: none;
+    }
+    html[data-line-hover="crossfade"] .project-grid.is-line .project:hover .project-media .ph-img {
+      opacity: 1;
+    }
+    html[data-line-hover="crossfade"] .project-grid.is-line .project:hover .project-meta .left,
+    html[data-line-hover="crossfade"] .project-grid.is-line .project:hover .project-meta .right {
+      opacity: 1;
+    }
+  }
+  /* remove the old narrower breakpoint, replaced above */
+
+  /* ============================================================
+     PROJECTS — card grid
+     ============================================================ */
+  .projects {
+    position: relative;
+    background: var(--bg);
+    z-index: 10;
+    padding: 40px 32px 80px;
+  }
+  .project-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px 32px;
+  }
+  @media (max-width: 880px) {
+    .project-grid { grid-template-columns: 1fr; }
+  }
+
+  .project, .project * { color: inherit; text-decoration: none; }
+  .project {
+    position: relative;
+    display: block;
+    cursor: pointer;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .project:hover { transform: translateY(-4px); }
+
+  /* Make every 3rd card span full width for rhythm */
+  .project.wide { grid-column: 1 / -1; }
+  .project.wide .project-media { aspect-ratio: 2.4 / 1; }
+
+  .project-media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2.4 / 1;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .project-media .ph-img {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.001);
+    transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .project:hover .project-media .ph-img {
+    transform: scale(1.06);
+  }
+  .project-media video {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .project:hover .project-media video { opacity: 1; }
+
+  /* Play chip removed — hidden across all cards */
+  .project-media .play-chip {
+    display: none;
+  }
+
+  /* Duration chip removed — kept rule so legacy markup stays hidden */
+  .project-media .duration {
+    display: none;
+  }
+
+  /* Meta row under card */
+  .project-meta {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 16px;
+    padding: 16px 2px 0;
+  }
+  .project-meta .left {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    min-width: 0;
+  }
+  .project-meta .idx {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  .project-meta .title {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: clamp(22px, 2.1vw, 30px);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .project-meta .title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .project-meta .right {
+    display: flex;
+    gap: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .project-meta .dot {
+    opacity: 0.4;
+  }
+
+  /* Preview colors — distinct tone per project */
+  /* Photo tile — set background-image inline */
+  .ph-img.ph-photo { background-size: cover; background-position: center; }
+  .ph-img.ph-photo::after { display: none; }
+  .ph-img.ph-photo::before { display: none; }
+
+  .ph-sonic { background: #0a0a0a url('assets/projects/sonic4.jpg') center/cover no-repeat; }
+  .ph-sonic::after { display: none; }
+  .ph-sonic::before { display: none; }
+  .ph-1  { background: linear-gradient(135deg, #ff6b35, #d4380d); }
+  .ph-2  { background: linear-gradient(135deg, #1a1a2e, #4a4a8a); }
+  .ph-3  { background: linear-gradient(135deg, #d4a574, #8b6339); }
+  .ph-4  { background: linear-gradient(135deg, #22b573, #0a6b3c); }
+  .ph-5  { background: linear-gradient(135deg, #e8e8e8, #888); }
+  .ph-6  { background: linear-gradient(135deg, #ff4a8a, #7a1540); }
+  .ph-7  { background: linear-gradient(135deg, #2d5ba8, #0c1f4d); }
+  .ph-8  { background: linear-gradient(135deg, #1a1a1a, #3a3a3a); }
+
+  /* Subtle texture + label */
+  .ph-img::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 4px),
+      radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%);
+    mix-blend-mode: overlay;
+  }
+  .ph-img::before {
+    content: attr(data-label);
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    z-index: 2;
+  }
+
+  /* ============================================================
+     ABOUT
+     ============================================================ */
+  .about {
+    padding: 140px 32px;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 80px;
+    max-width: 100%;
+  }
+  @media (max-width: 760px) {
+    .about {
+      grid-template-columns: 1fr;
+      gap: 32px;
+      padding: 80px 24px;
+    }
+  }
+  .about .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .about p {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: clamp(22px, 2.4vw, 36px);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    color: var(--fg);
+    text-wrap: pretty;
+  }
+  .about p + p { margin-top: 1.2em; color: var(--fg-dim); }
+  .about p em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .about .software {
+    margin-top: 3em;
+    padding-top: 2em;
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  .about .software-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    padding-top: 4px;
+  }
+  .about .software-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+  .about .software-list li {
+    padding: 5px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .about .software-list li:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  @media (max-width: 680px) {
+    .about .software { grid-template-columns: 1fr; gap: 14px; }
+  }
+
+  /* ============================================================
+     CLIENTS
+     ============================================================ */
+  .clients {
+    padding: 100px 32px;
+    border-bottom: 1px solid var(--line);
+  }
+  .clients .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+  .client-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px 12px;
+  }
+  .client-grid > div {
+    aspect-ratio: 1.6 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    position: relative;
+    transition: opacity 0.3s;
+  }
+  .client-grid > div img,
+  .client-grid > div svg {
+    /* Normalize visual weight: cap both dimensions so tall symbols and wide wordmarks */
+    /* settle into roughly the same optical size.                                       */
+    max-width: 88%;
+    max-height: 72px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    opacity: 0.75;
+    filter: brightness(0) invert(1);
+    transition: opacity 0.3s;
+  }
+  /* Per-logo optical tuning — symbols read smaller at same box, wordmarks read wider. */
+  .client-grid > div[data-logo="apple"] img,
+  .client-grid > div[data-logo="warner-bros"] img,
+  .client-grid > div[data-logo="paramount"] img,
+  .client-grid > div[data-logo="marvel"] img,
+  .client-grid > div[data-logo="hbo"] img { max-height: 82px; max-width: 70%; }
+  /* DC: circular symbol — size like other symbol marks */
+  .client-grid > div[data-logo="dc-comics"] img { max-height: 86px; max-width: 58%; }
+  .client-grid > div[data-logo="netflix"] img,
+  .client-grid > div[data-logo="disney"] img,
+  .client-grid > div[data-logo="lucasfilm"] img,
+  .client-grid > div[data-logo="universal"] img,
+  .client-grid > div[data-logo="amazon"] img { max-height: 58px; max-width: 92%; }
+  /* DreamWorks: vertical lockup (symbol + wordmark) — needs more height */
+  .client-grid > div[data-logo="dreamworks"] img { max-height: 90px; max-width: 68%; }
+  .client-grid > div:hover img,
+  .client-grid > div:hover svg {
+    opacity: 1;
+    /* Tint to coral accent (#ff6a5c) via filter stack */
+    filter: brightness(0) saturate(100%) invert(55%) sepia(62%) saturate(2800%) hue-rotate(331deg) brightness(102%) contrast(101%);
+  }
+  /* Placeholder tile: monogram until real logo drops in */
+  .client-grid > div.placeholder {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    color: var(--fg-dim);
+    text-align: center;
+    line-height: 1.2;
+  }
+  .client-grid > div.placeholder .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    display: block;
+    margin-top: 6px;
+    opacity: 0.5;
+  }
+  @media (max-width: 900px) {
+    .client-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .client-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ============================================================
+     FOOTER
+     ============================================================ */
+  footer {
+    padding: 80px 32px 32px;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    footer {
+      grid-template-columns: 1fr 1fr;
+      padding: 64px 24px 24px;
+      gap: 32px 24px;
+    }
+    footer .big {
+      grid-column: 1 / -1;
+      margin-bottom: 8px;
+    }
+  }
+  @media (max-width: 480px) {
+    footer {
+      grid-template-columns: 1fr;
+    }
+  }
+  footer .col {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  footer .big {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: clamp(40px, 7vw, 110px);
+    font-weight: 300;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+  }
+  footer .big em {
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 400;
+    display: inline-block;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  footer .big em.cycle-out {
+    opacity: 0;
+    transform: translateY(-12px) rotate(-2deg);
+  }
+  footer .big em.cycle-in {
+    opacity: 0;
+    transform: translateY(14px) rotate(2deg);
+  }
+  footer .col .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 16px;
+  }
+  footer .col a, footer .col p {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--fg);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 6px;
+    transition: color 0.2s;
+  }
+  footer .col a:hover { color: var(--accent); }
+
+  .footer-base {
+    padding: 32px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* ============================================================
+     TWEAKS PANEL
+     ============================================================ */
+  .tweaks {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    padding: 16px;
+    z-index: 100;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg);
+    display: none;
+    min-width: 220px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  .tweaks.active { display: block; }
+  .tweaks .title {
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--fg-dim);
+    margin-bottom: 12px;
+    font-size: 10px;
+  }
+  .tweaks .row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tweaks button {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--fg);
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: all 0.2s;
+  }
+  .tweaks button:hover { border-color: var(--fg); }
+  .tweaks button.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  .tweaks .swatch {
+    display: inline-block;
+    width: 10px; height: 10px;
+    margin-right: 6px;
+    vertical-align: middle;
+    border: 1px solid var(--line);
+  }
+
+  /* ============================================================
+     HERO PARALLAX FADE
+     ============================================================ */
+  .hero-sticky {
+    transition: none;
+  }
+
+  /* ============================================================
+     MOTION GRAPHICS REEL — animated SVG/CSS
+     ============================================================ */
+  .reel-mg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #000;
+  }
+  .mg-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 50%, #0a0a0a 0%, #000 100%);
+  }
+  .mg-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Scene rotation: 4 scenes × 5s = 20s total */
+  .mg-scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    animation: mgReel 20s linear infinite;
+  }
+  .mg-s1 { animation-delay: 0s; }
+  .mg-s2 { animation-delay: -15s; }
+  .mg-s3 { animation-delay: -10s; }
+  .mg-s4 { animation-delay: -5s; }
+  @keyframes mgReel {
+    0%, 22% { opacity: 1; transform: scale(1); }
+    25%, 100% { opacity: 0; transform: scale(1.04); }
+  }
+
+  /* Scene 1 — sun / horizon */
+  .mg-s1 .mg-sun {
+    transform-origin: 960px 620px;
+    animation: mgSun 20s ease-in-out infinite;
+  }
+  @keyframes mgSun {
+    0%   { transform: translateY(200px) scale(0.6); opacity: 0.2; }
+    10%  { transform: translateY(0) scale(1); opacity: 1; }
+    22%  { transform: translateY(-20px) scale(1.05); opacity: 1; }
+    25%  { transform: translateY(-40px) scale(1.1); opacity: 0.4; }
+    100% { transform: translateY(-40px) scale(1.1); opacity: 0; }
+  }
+  .mg-s1 .mg-rings circle {
+    transform-origin: 960px 620px;
+    animation: mgRingsBreath 20s ease-in-out infinite;
+  }
+  .mg-s1 .mg-rings circle:nth-child(2) { animation-delay: -1s; }
+  .mg-s1 .mg-rings circle:nth-child(3) { animation-delay: -2s; }
+  .mg-s1 .mg-rings circle:nth-child(4) { animation-delay: -3s; }
+  .mg-s1 .mg-rings circle:nth-child(5) { animation-delay: -4s; }
+  @keyframes mgRingsBreath {
+    0%, 100% { transform: scale(0.95); opacity: 0.2; }
+    10% { transform: scale(1); opacity: 0.5; }
+    22% { transform: scale(1.02); opacity: 0.3; }
+  }
+
+  /* Scene 2 — orbit / triangle */
+  .mg-s2 .mg-orbit {
+    transform-origin: 960px 540px;
+    animation: mgSpin 20s linear infinite;
+  }
+  @keyframes mgSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  .mg-s2 .mg-node.a {
+    transform-origin: 960px 540px;
+    animation: mgSpin 8s linear infinite reverse;
+  }
+  .mg-s2 .mg-tri {
+    transform-origin: 960px 540px;
+    animation: mgTri 20s ease-in-out infinite;
+  }
+  @keyframes mgTri {
+    0%, 100% { transform: rotate(0deg) scale(0.9); opacity: 0; }
+    10% { transform: rotate(60deg) scale(1); opacity: 1; }
+    22% { transform: rotate(120deg) scale(1.05); opacity: 1; }
+    25% { transform: rotate(180deg) scale(1.1); opacity: 0; }
+  }
+
+  /* Scene 3 — kinetic type + light blades */
+  .mg-s3 .mg-kinetic text {
+    opacity: 0;
+    animation: mgType 20s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+  .mg-s3 .mg-kinetic text:nth-child(1) { animation-delay: 0.1s; }
+  .mg-s3 .mg-kinetic text:nth-child(2) { animation-delay: 0.35s; }
+  @keyframes mgType {
+    0% { opacity: 0; transform: translateY(80px); }
+    6%, 22% { opacity: 1; transform: translateY(0); }
+    25%, 100% { opacity: 0; transform: translateY(-40px); }
+  }
+  .mg-s3 .mg-blades rect {
+    transform-origin: 50% 50%;
+    animation: mgBlade 20s ease-in-out infinite;
+  }
+  .mg-s3 .mg-blades rect:nth-child(1) { animation-delay: -0.2s; }
+  .mg-s3 .mg-blades rect:nth-child(2) { animation-delay: -0.5s; }
+  .mg-s3 .mg-blades rect:nth-child(3) { animation-delay: -0.8s; }
+  .mg-s3 .mg-blades rect:nth-child(4) { animation-delay: -1.1s; }
+  @keyframes mgBlade {
+    0% { transform: scaleX(0); opacity: 0; }
+    8% { transform: scaleX(1); opacity: 1; }
+    22% { transform: scaleX(1); opacity: 0.8; }
+    25%, 100% { transform: scaleX(1); opacity: 0; }
+  }
+
+  /* Scene 4 — liquid bloom */
+  .mg-s4 .mg-liquid ellipse {
+    transform-origin: 960px 540px;
+    animation: mgBloom 20s cubic-bezier(0.33, 1, 0.68, 1) infinite;
+  }
+  .mg-s4 .mg-liquid ellipse:nth-child(2) { animation-delay: -0.3s; }
+  .mg-s4 .mg-liquid ellipse:nth-child(3) { animation-delay: -0.6s; }
+  @keyframes mgBloom {
+    0%   { transform: scale(0.2); opacity: 0; }
+    10%  { transform: scale(1); opacity: 1; }
+    22%  { transform: scale(1.15); opacity: 0.9; }
+    25%, 100% { transform: scale(1.4); opacity: 0; }
+  }
+
+  /* Letterbox bars — cinematic 2.39:1 crop */
+  .mg-letterbox {
+    position: absolute;
+    left: 0; right: 0;
+    height: calc((100vh - (100vw / 2.39)) / 2);
+    min-height: 40px;
+    background: #000;
+    z-index: 4;
+    pointer-events: none;
+  }
+  .mg-letterbox.top { top: 0; }
+  .mg-letterbox.bot { bottom: 0; }
+
+  /* Scan line sweep */
+  .mg-scan {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+    background-size: 100% 8px;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 3;
+    animation: mgScan 6s linear infinite;
+  }
+  @keyframes mgScan {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 100vh; }
+  }
+
+  /* Film grain */
+  .mg-grain {
+    position: absolute;
+    inset: -50%;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0.18;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.9  0 0 0 0 0.9  0 0 0 0 0.9  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    animation: mgGrain 0.4s steps(4) infinite;
+    mix-blend-mode: overlay;
+  }
+  @keyframes mgGrain {
+    0% { transform: translate(0,0); }
+    25% { transform: translate(-5%,3%); }
+    50% { transform: translate(3%,-5%); }
+    75% { transform: translate(-2%,4%); }
+    100% { transform: translate(0,0); }
+  }
+
+  /* Timecode + REC chip — cinematic overlays */
+  .mg-tc, .mg-rec {
+    position: absolute;
+    z-index: 6;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.8);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .mg-tc { bottom: calc(((100vh - (100vw / 2.39)) / 2) + 20px); left: 32px; }
+  .mg-rec { top: calc(((100vh - (100vw / 2.39)) / 2) + 20px); right: 32px; }
+  .mg-tc .mg-scene-id { color: rgba(255,255,255,0.45); }
+  .mg-rec .mg-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #ff3030;
+    animation: mgBlink 1.2s ease-in-out infinite;
+  }
+  @keyframes mgBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+</head>
+<body>
+
+<!-- =========================================================
+     NAV
+     ========================================================= -->
+<nav class="top">
+  <div class="brand">
+    <a href="Portfolio.html" aria-label="Mike Daniels — home">
+      <img class="logo" src="assets/mike-daniels-logo.png" alt="Mike Daniels" />
+    </a>
+  </div>
+  <div class="center"></div>
+  <div class="links">
+    <a href="#work">WORK</a>
+    <a href="#about">ABOUT</a>
+    <a href="#contact">CONTACT</a>
+    <button class="nav-search" id="navSearch" type="button" aria-label="Search projects" title="Search (⌘K)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <circle cx="10.5" cy="10.5" r="6.5"/>
+        <line x1="15.5" y1="15.5" x2="20" y2="20" stroke-linecap="round"/>
+      </svg>
+  </div>
+</nav>
+
+<!-- Search palette overlay -->
+<div class="search-overlay" id="searchOverlay" data-open="false" role="dialog" aria-modal="true" aria-label="Search projects">
+  <div class="search-panel">
+    <div class="search-input-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <circle cx="10.5" cy="10.5" r="6.5"/>
+        <line x1="15.5" y1="15.5" x2="20" y2="20" stroke-linecap="round"/>
+      </svg>
+      <input id="searchInput" type="text" placeholder="Search projects, studios…" autocomplete="off" spellcheck="false"/>
+      <kbd>ESC</kbd>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+      <span><kbd>↵</kbd> Open</span>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     HERO — full-bleed reel
+     ========================================================= -->
+<section class="hero" data-screen-label="01 Hero Reel">
+  <div class="hero-sticky" id="heroSticky">
+    <div class="reel-wrap" id="reelWrap">
+      <!-- Looping Vimeo reel (background mode: no chrome, autoplay, loop, muted) -->
+      <iframe
+        id="reelMG"
+        class="reel-video"
+        src="https://player.vimeo.com/video/1184333524?background=1&autoplay=1&loop=1&muted=1&quality=1080p"
+        frameborder="0"
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowfullscreen
+      ></iframe>
+    </div>
+
+    <div class="hero-overlay">
+
+      <div class="hero-footer">
+        <div>
+          <span class="label">Associate Creative Director</span>
+          <span class="value">Los Angeles, CA</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="scroll-cue">
+      <span>SCROLL</span>
+      <span class="line"></span>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     PROJECTS
+     ========================================================= -->
+<div class="meta-bar work-tabs">
+  <div class="tab-group">
+    <button class="tab active" data-tab="selected">SELECTED WORK</button>
+    <span class="tab-sep">/</span>
+    <button class="tab" data-tab="recent">RECENT WORK</button>
+  </div>
+  <div class="center"></div>
+  <div class="right">
+    <div class="view-toggle" role="tablist" aria-label="Work view">
+      <button class="vt-btn active" data-view="grid" role="tab" aria-selected="true">
+        <span class="vt-ico vt-grid"><span></span><span></span><span></span><span></span></span>
+        GRID
+      </button>
+      <button class="vt-btn" data-view="line" role="tab" aria-selected="false">
+        <span class="vt-ico vt-line"><span></span><span></span><span></span></span>
+        LINE
+      </button>
+    </div>
+  </div>
+</div>
+
+<section class="projects" id="work" data-screen-label="02 Projects">
+  <!-- SELECTED WORK -->
+  <div class="project-grid work-set" data-set="selected">
+
+    <a class="project" href="projects/sonic-4.html">
+      <div class="project-media">
+        <div class="ph-img ph-sonic"></div>
+        <span class="play-chip"><span class="tri"></span> PREVIEW</span>
+        <span class="duration">00:42</span>
+      </div>
+      <div class="project-meta">
+        <div class="left">
+          <span class="title">Sonic the Hedgehog 4</span>
+        </div>
+        <div class="right">
+          <span>Title Reveal / Paramount</span>        </div>
+      </div>
+    </a>
+
+    <a class="project" href="projects/maul-shadow-lord.html">
+      <div class="project-media">
+        <div class="ph-img ph-photo" style="background-image: url('assets/projects/maul.jpg')"></div>
+        <span class="play-chip"><span class="tri"></span> PREVIEW</span>
+        <span class="duration">01:20</span>
+      </div>
+      <div class="project-meta">
+        <div class="left">
+          <span class="title">Maul: Shadow Lord</span>
+        </div>
+        <div class="right">
+          <span>Title Treatments / Disney</span>        </div>
+      </div>
+    </a>
+
+    <a class="project wide" href="projects/imax-documentaries.html">
+      <div class="project-media">
+        <div class="ph-img ph-photo" style="background-image: url('assets/projects/imax_docs.jpg')"></div>
+        <span class="play-chip"><span class="tri"></span> PREVIEW</span>
+        <span class="duration">00:58</span>
+      </div>
+      <div class="project-meta">
+        <div class="left">
+          <span class="title">IMAX Documentaries</span>
+        </div>
+        <div class="right">
+          <span>Studio Logo / IMAX</span>        </div>
+      </div>
+    </a>
+
+    <a class="project" href="#">
+      <div class="project-media">
+        <div class="ph-img ph-photo" style="background-image: url('assets/projects/avatar-atla.jpg')"></div>
+        <span class="play-chip"><span class="tri"></span> PREVIEW</span>
+        <span class="duration">00:30</span>
+      </div>
+      <div class="project-meta">
+        <div class="left">
+          <span class="title">Avatar: The Last Airbender</span>
+        </div>
+        <div class="right">
+          <span>Title Animation / Netflix</span>        </div>
+      </div>
+    </a>
+
+    <a class="project" href="projects/mighty-nein.html">
+      <div class="project-media">
+        <div class="ph-img ph-photo" style="background-image: url('assets/projects/mighty-nein.jpg')"></div>
+        <span class="play-chip"><span class="tri"></span> PREVIEW</span>
+        <span class="duration">00:45</span>
+      </div>
+      <div class="project-meta">
+        <div class="left">
+          <span class="title">The Mighty Nein</span>
+        </div>
+        <div class="right">
+          <span>Trailer Design / Amazon</span>        </div>
+      </div>
+    </a>
+
+    <a class="project" href="#">
+      <div class="project-media">
+        <div class="ph-img ph-photo" style="background-image: url('assets/projects/andor.jpg')"></div>
+        <span class="play-chip"><span class="tri"></span> PREVIEW</span>
+        <span class="duration">01:05</span>
+      </div>
+      <div class="project-meta">
+        <div class="left">
+          <span class="title">Andor</span>
+        </div>
+        <div class="right">
+          <span>Title Animation / Lucasfilm</span>        </div>
+      </div>
+    </a>
+
+    <a class="project" href="projects/borderlands.html">
+      <div class="project-media">
+        <div class="ph-img ph-photo" style="background-image: url('assets/projects/borderlands.jpg')"></div>
+        <span class="play-chip"><span class="tri"></span> PREVIEW</span>
+        <span class="duration">02:10</span>
+      </div>
+      <div class="project-meta">
+        <div class="left">
+          <span class="title">Borderlands</span>
+        </div>
+        <div class="right">
+          <span>Trailer Design / Lionsgate</span>        </div>
+      </div>
+    </a>
+
+    <a class="project wide" href="#">
+      <div class="project-media">
+        <div class="ph-img ph-photo" style="background-image: url('assets/projects/derry.jpg?v=2')"></div>
+        <span class="play-chip"><span class="tri"></span> PREVIEW</span>
+        <span class="duration">03:30</span>
+      </div>
+      <div class="project-meta">
+        <div class="left">
+          <span class="title">IT: Welcome to Derry</span>
+        </div>
+        <div class="right">
+          <span>Title Sequence Design / HBO</span>        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- RECENT WORK (placeholders — swap in real projects later) -->
+  <div class="project-grid work-set" data-set="recent" hidden>
+
+    <a class="project" href="#">
+      <div class="project-media">
+        <div class="ph-img ph-1" data-label="PROJECT A"></div>
+      </div>
+      <div class="project-meta">
+        <div class="left"><span class="title">Project A</span></div>
+        <div class="right"><span>Title Sequence / Studio TBD</span></div>
+      </div>
+    </a>
+
+    <a class="project" href="#">
+      <div class="project-media">
+        <div class="ph-img ph-2" data-label="PROJECT B"></div>
+      </div>
+      <div class="project-meta">
+        <div class="left"><span class="title">Project B</span></div>
+        <div class="right"><span>Trailer Design / Studio TBD</span></div>
+      </div>
+    </a>
+
+    <a class="project wide" href="#">
+      <div class="project-media">
+        <div class="ph-img ph-3" data-label="PROJECT C"></div>
+      </div>
+      <div class="project-meta">
+        <div class="left"><span class="title">Project C</span></div>
+        <div class="right"><span>Main Title / Studio TBD</span></div>
+      </div>
+    </a>
+
+    <a class="project" href="#">
+      <div class="project-media">
+        <div class="ph-img ph-4" data-label="PROJECT D"></div>
+      </div>
+      <div class="project-meta">
+        <div class="left"><span class="title">Project D</span></div>
+        <div class="right"><span>Title Animation / Studio TBD</span></div>
+      </div>
+    </a>
+
+    <a class="project" href="#">
+      <div class="project-media">
+        <div class="ph-img ph-5" data-label="PROJECT E"></div>
+      </div>
+      <div class="project-meta">
+        <div class="left"><span class="title">Project E</span></div>
+        <div class="right"><span>Brand Film / Studio TBD</span></div>
+      </div>
+    </a>
+
+    <a class="project" href="#">
+      <div class="project-media">
+        <div class="ph-img ph-6" data-label="PROJECT F"></div>
+      </div>
+      <div class="project-meta">
+        <div class="left"><span class="title">Project F</span></div>
+        <div class="right"><span>Title Design / Studio TBD</span></div>
+      </div>
+    </a>
+
+    <a class="project wide" href="#">
+      <div class="project-media">
+        <div class="ph-img ph-7" data-label="PROJECT G"></div>
+      </div>
+      <div class="project-meta">
+        <div class="left"><span class="title">Project G</span></div>
+        <div class="right"><span>Opening Titles / Studio TBD</span></div>
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<hr class="section-rule">
+
+<!-- =========================================================
+     ABOUT
+     ========================================================= -->
+<section class="about" id="about" data-screen-label="03 About">
+  <div class="label">ABOUT</div>
+  <div>
+    <p>Hello, and thank you for checking out my portfolio. I'm Michael Daniels — an <em>Associate Creative Director and Motion Designer</em> based in Los Angeles, working at Aspect.</p>
+    <p>This industry and craft are truly my passion, and I'm fortunate to wake up every day and be a part of it. Whether it's film, animation, design, or visual effects, I love learning more and continuously expanding my skill set.</p>
+  </div>
+</section>
+
+<!-- =========================================================
+     CLIENTS
+     ========================================================= -->
+<section class="clients" data-screen-label="04 Studios">
+  <div class="label">CLIENTS</div>
+  <div class="client-grid">
+    <div data-logo="warner-bros"><img src="assets/logos/warner-bros.svg" alt="Warner Bros."></div>
+    <div data-logo="paramount"><img src="assets/logos/paramount.svg" alt="Paramount"></div>
+    <div data-logo="disney"><img src="assets/logos/disney.svg" alt="Disney"></div>
+    <div data-logo="amazon"><img src="assets/logos/amazon.svg" alt="Amazon Prime"></div>
+    <div data-logo="netflix"><img src="assets/logos/netflix.svg" alt="Netflix"></div>
+    <div data-logo="apple"><img src="assets/logos/apple.svg" alt="Apple"></div>
+    <div data-logo="imax"><img src="assets/logos/imax.svg" alt="IMAX"></div>
+    <div data-logo="hbo"><img src="assets/logos/hbo.svg" alt="HBO"></div>
+    <div data-logo="marvel"><img src="assets/logos/marvel.svg" alt="Marvel"></div>
+    <div data-logo="dc-comics"><img src="assets/logos/dc-comics.png" alt="DC Comics"></div>
+    <div data-logo="lucasfilm"><img src="assets/logos/lucasfilm.svg" alt="Lucasfilm"></div>
+    <div data-logo="lionsgate"><img src="assets/logos/lionsgate.svg" alt="Lionsgate"></div>
+    <div data-logo="universal"><img src="assets/logos/universal.svg" alt="Universal"></div>
+    <div data-logo="sony"><img src="assets/logos/sony.svg" alt="Sony"></div>
+    <div data-logo="dreamworks"><img src="assets/logos/dreamworks.png" alt="DreamWorks"></div>
+  </div>
+</section>
+
+<!-- =========================================================
+     FOOTER
+     ========================================================= -->
+<footer id="contact" data-screen-label="05 Contact">
+  <div class="big">Let's make<br>something <em id="cycleWord">epic.</em></div>
+  <div class="col">
+    <span class="label">Contact</span>
+    <a href="mailto:mikebdaniels@gmail.com">mikebdaniels@gmail.com</a>
+  </div>
+  <div class="col">
+    <span class="label">Elsewhere</span>
+    <a href="https://www.linkedin.com/in/michael-daniels-55346128/" target="_blank" rel="noopener">LinkedIn ↗</a>
+    <a href="#">Vimeo ↗</a>
+    <a href="#">Are.na ↗</a>
+  </div>
+  <div class="col">
+    <span class="label">Studio</span>
+    <p>231 Meserole Ave<br>Brooklyn, NY 11222</p>
+  </div>
+</footer>
+
+<div class="footer-base">
+  <span>© 2026 MIKE DANIELS</span>
+  <span id="clock">— — : — —</span>
+  <span>ALL RIGHTS RESERVED</span>
+</div>
+
+<!-- =========================================================
+     TWEAKS
+     ========================================================= -->
+<div class="tweaks" id="tweaksPanel">
+  <div class="title">Color Treatment</div>
+  <div class="row" id="themeRow">
+    <button data-theme="mono"><span class="swatch" style="background:#ff6a5c"></span>Coral</button>
+    <button data-theme="cream"><span class="swatch" style="background:#f1e7d3"></span>Cream</button>
+    <button data-theme="ice"><span class="swatch" style="background:#9ac4ff"></span>Ice</button>
+    <button data-theme="red"><span class="swatch" style="background:#ff4a2b"></span>Red</button>
+    <button data-theme="acid"><span class="swatch" style="background:#d9ff3e"></span>Acid</button>
+    <button data-theme="paper"><span class="swatch" style="background:#141310"></span>Paper</button>
+  </div>
+  <div class="title" style="margin-top:14px">Line hover</div>
+  <div class="row" id="lineHoverRow">
+    <button data-line-hover="grow">Grow</button>
+    <button data-line-hover="crossfade">Crossfade</button>
+  </div>
+</div>
+
+<script>
+  /* ==========================================================
+     TWEAK DEFAULTS — persisted
+     ========================================================== */
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "theme": "mono",
+    "lineHover": "grow"
+  }/*EDITMODE-END*/;
+
+  function applyTheme(name) {
+    document.documentElement.setAttribute('data-theme', name);
+    document.querySelectorAll('#themeRow button').forEach(b => {
+      b.classList.toggle('active', b.dataset.theme === name);
+    });
+  }
+  function applyLineHover(name) {
+    document.documentElement.setAttribute('data-line-hover', name);
+    document.querySelectorAll('#lineHoverRow button').forEach(b => {
+      b.classList.toggle('active', b.dataset.lineHover === name);
+    });
+  }
+  applyTheme(TWEAK_DEFAULTS.theme);
+  applyLineHover(TWEAK_DEFAULTS.lineHover);
+
+  /* ==========================================================
+     TWEAKS — edit mode plumbing
+     ========================================================== */
+  window.addEventListener('message', (e) => {
+    if (!e.data) return;
+    if (e.data.type === '__activate_edit_mode') {
+      document.getElementById('tweaksPanel').classList.add('active');
+    } else if (e.data.type === '__deactivate_edit_mode') {
+      document.getElementById('tweaksPanel').classList.remove('active');
+    }
+  });
+  window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+
+  document.querySelectorAll('#themeRow button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.theme;
+      applyTheme(name);
+      window.parent.postMessage({
+        type: '__edit_mode_set_keys',
+        edits: { theme: name }
+      }, '*');
+    });
+  });
+
+  document.querySelectorAll('#lineHoverRow button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.lineHover;
+      applyLineHover(name);
+      window.parent.postMessage({
+        type: '__edit_mode_set_keys',
+        edits: { lineHover: name }
+      }, '*');
+    });
+  });
+
+  /* ==========================================================
+     HERO PARALLAX / FADE ON SCROLL
+     ========================================================== */
+  const heroSticky = document.getElementById('heroSticky');
+  const reelWrap = document.getElementById('reelWrap');
+  const heroOverlay = document.querySelector('.hero-overlay');
+  const scrollCue = document.querySelector('.scroll-cue');
+  const audioToggle = document.getElementById('audioToggle');
+
+  function onScroll() {
+    const y = window.scrollY;
+    const vh = window.innerHeight;
+    const p = Math.min(1, y / vh);        // 0 → 1 over first viewport
+    const p2 = Math.min(1, y / (vh * 0.7));
+
+    // reel scales down slightly + fades
+    reelWrap.style.transform = `scale(${1 - p * 0.06}) translateY(${-p * 60}px)`;
+    reelWrap.style.opacity = `${1 - p * 0.7}`;
+
+    // overlay fades faster
+    heroOverlay.style.opacity = `${1 - p2 * 1.4}`;
+    heroOverlay.style.transform = `translateY(${-p2 * 40}px)`;
+
+    if (scrollCue) scrollCue.style.opacity = `${1 - p * 2}`;
+    if (audioToggle) audioToggle.style.opacity = `${1 - p * 2}`;
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  /* ==========================================================
+     MG REEL — timecode + scene label
+     ========================================================== */
+  (function(){
+    const tcEl = document.getElementById('mgTC');
+    const scEl = document.getElementById('mgScene');
+    if (!tcEl) return;
+    const start = performance.now();
+    const LOOP = 20000; // ms
+    function frame(now) {
+      const t = (now - start) % LOOP;
+      const total = t / 1000;
+      const h = 0;
+      const m = Math.floor(total / 60);
+      const s = Math.floor(total % 60);
+      const f = Math.floor((total * 24) % 24);
+      const pad = (n) => String(n).padStart(2, '0');
+      tcEl.textContent = `${pad(h)}:${pad(m)}:${pad(s)}:${pad(f)}`;
+      const sceneIdx = Math.floor(t / 5000) + 1;
+      scEl.textContent = `S${pad(sceneIdx)} / 04`;
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  /* ==========================================================
+     LIVE CLOCK
+     ========================================================== */
+  function tick() {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Los_Angeles',
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    }).formatToParts(new Date());
+    const get = (t) => parts.find(p => p.type === t)?.value ?? '00';
+    const t = `${get('hour')}:${get('minute')}:${get('second')} LA`;
+    document.getElementById('clock').textContent = t;
+  }
+  /* ==========================================================
+     NAV SCROLL STATE
+     ========================================================== */
+  (function(){
+    const nav = document.querySelector('nav.top');
+    if (!nav) return;
+    let ticking = false;
+    function update() {
+      if (window.scrollY > 24) nav.classList.add('scrolled');
+      else nav.classList.remove('scrolled');
+      ticking = false;
+    }
+    window.addEventListener('scroll', () => {
+      if (!ticking) { requestAnimationFrame(update); ticking = true; }
+    }, { passive: true });
+    update();
+  })();
+
+  setInterval(tick, 1000); tick();
+
+  /* ==========================================================
+     PROJECT SEARCH (⌘K palette)
+     ========================================================== */
+  (function () {
+    const overlay  = document.getElementById('searchOverlay');
+    const btn      = document.getElementById('navSearch');
+    const input    = document.getElementById('searchInput');
+    const results  = document.getElementById('searchResults');
+    if (!overlay || !btn || !input || !results) return;
+
+    // Build index from every .project anchor currently in the DOM
+    const index = Array.from(document.querySelectorAll('.project')).map(el => {
+      const title = el.querySelector('.title')?.textContent.trim() || '';
+      const meta  = el.querySelector('.project-meta .right span')?.textContent.trim() || '';
+      const phImg = el.querySelector('.ph-img');
+      // Prefer inline style, fall back to computed style (for class-driven tiles like .ph-sonic)
+      const bg = phImg?.style.backgroundImage || (phImg ? getComputedStyle(phImg).backgroundImage : '');
+      const thumb = bg.match(/url\(["']?(.+?)["']?\)/)?.[1] || '';
+      const href  = el.getAttribute('href') || '#';
+      return { title, meta, thumb, href, haystack: (title + ' ' + meta).toLowerCase() };
+    }).filter(p => p.title);
+
+    let activeIdx = 0;
+
+    const highlight = (text, q) => {
+      if (!q) return text;
+      const i = text.toLowerCase().indexOf(q);
+      if (i === -1) return text;
+      return text.slice(0, i) + '<mark>' + text.slice(i, i + q.length) + '</mark>' + text.slice(i + q.length);
+    };
+
+    const render = () => {
+      const q = input.value.trim().toLowerCase();
+      const matches = q ? index.filter(p => p.haystack.includes(q)) : index;
+      activeIdx = 0;
+      results.innerHTML = matches.map((p, i) => `
+        <a class="search-result${i === 0 ? ' active' : ''}" href="${p.href}" data-idx="${i}">
+          <span class="thumb" ${p.thumb ? `style="background-image:url('${p.thumb}')"` : ''}></span>
+          <span class="rtitle">${highlight(p.title, q)}</span>
+          <span class="rmeta">${highlight(p.meta, q)}</span>
+        </a>
+      `).join('');
+    };
+
+    const setActive = (i) => {
+      const items = results.querySelectorAll('.search-result');
+      if (!items.length) return;
+      activeIdx = (i + items.length) % items.length;
+      items.forEach((el, idx) => el.classList.toggle('active', idx === activeIdx));
+      items[activeIdx].scrollIntoView({ block: 'nearest' });
+    };
+
+    const open = () => {
+      render();
+      overlay.setAttribute('data-open', 'true');
+      setTimeout(() => input.focus(), 10);
+    };
+    const close = () => {
+      overlay.setAttribute('data-open', 'false');
+      input.value = '';
+    };
+
+    btn.addEventListener('click', open);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) close();
+    });
+    input.addEventListener('input', render);
+    input.addEventListener('keydown', (e) => {
+      const items = results.querySelectorAll('.search-result');
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(activeIdx + 1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(activeIdx - 1); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        const active = items[activeIdx];
+        if (active) active.click();
+      } else if (e.key === 'Escape') close();
+    });
+    // Global ⌘K / Ctrl+K shortcut
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        overlay.getAttribute('data-open') === 'true' ? close() : open();
+      } else if (e.key === 'Escape' && overlay.getAttribute('data-open') === 'true') {
+        close();
+      }
+    });
+  })();
+
+  /* ==========================================================
+     WORK TABS (Selected / Recent) — persists in localStorage
+     ========================================================== */
+  (function () {
+    const tabs = document.querySelectorAll('.work-tabs .tab');
+    const sets = document.querySelectorAll('.work-set');
+    const KEY  = 'md_work_tab';
+    const show = (name) => {
+      tabs.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+      sets.forEach(s => {
+        const match = s.dataset.set === name;
+        if (match) {
+          s.hidden = false;
+          // next frame → fade in
+          requestAnimationFrame(() => s.classList.remove('fading'));
+        } else {
+          s.classList.add('fading');
+          setTimeout(() => { if (s.dataset.set !== name) s.hidden = true; }, 250);
+        }
+      });
+      try { localStorage.setItem(KEY, name); } catch(e) {}
+    };
+    // Restore saved tab
+    let saved = null;
+    try { saved = localStorage.getItem(KEY); } catch(e) {}
+    if (saved && document.querySelector(`.work-set[data-set="${saved}"]`)) show(saved);
+    tabs.forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
+  })();
+
+  /* ==========================================================
+     WORK VIEW TOGGLE (Grid / Line) — persists in localStorage
+     ========================================================== */
+  (function () {
+    const btns = document.querySelectorAll('.work-tabs .view-toggle .vt-btn');
+    const sets = document.querySelectorAll('.work-set');
+    const KEY  = 'md_work_view';
+    const apply = (view) => {
+      btns.forEach(b => {
+        const active = b.dataset.view === view;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-selected', String(active));
+      });
+      sets.forEach(s => s.classList.toggle('is-line', view === 'line'));
+      try { localStorage.setItem(KEY, view); } catch(e) {}
+    };
+    let saved = null;
+    try { saved = localStorage.getItem(KEY); } catch(e) {}
+    if (saved === 'line') apply('line');
+    btns.forEach(b => b.addEventListener('click', () => apply(b.dataset.view)));
+
+    // Measure each thumbnail's natural aspect ratio and stash it as --img-w
+    // so line view can size the row's image slot to the image's real width at
+    // a 140px row height (nothing crops horizontally).
+    const ROW_H = 140;
+    document.querySelectorAll('.project .ph-img').forEach(el => {
+      const bgSrc = getComputedStyle(el).backgroundImage.match(/url\(["']?(.+?)["']?\)/);
+      if (!bgSrc) return;
+      // Also stash as --thumb-src on the parent .project for the hover overlay
+      const project = el.closest('.project');
+      if (project) project.style.setProperty('--thumb-src', `url("${bgSrc[1]}")`);
+      const img = new Image();
+      img.onload = () => {
+        const r = img.naturalWidth / img.naturalHeight;
+        if (r > 0 && isFinite(r)) {
+          el.style.setProperty('--img-w', `${Math.round(ROW_H * r)}px`);
+        }
+      };
+      img.src = bgSrc[1];
+    });
+  })();
+
+  /* ==========================================================
+     SCROLL REVEAL
+     ========================================================== */
+  (function () {
+    const REVEAL_SELECTORS = [
+      '.project-controls',
+      '.project',
+      '.about .label',
+      '.about p',
+      '.about .software',
+      '.clients .label',
+      '.client-grid > div',
+      'footer .big',
+      'footer .col',
+      '.footer-base',
+    ];
+    const targets = document.querySelectorAll(REVEAL_SELECTORS.join(','));
+
+    targets.forEach((el, i) => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(28px)';
+      el.style.transition = 'opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)';
+      // Stagger within groups of 6
+      el.style.transitionDelay = `${(i % 6) * 55}ms`;
+    });
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+          io.unobserve(el);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+    targets.forEach(el => io.observe(el));
+  })();
+  // Cycling word in contact footer
+  (function() {
+    const el = document.getElementById('cycleWord');
+    if (!el) return;
+    const words = ['epic.', 'bold.', 'iconic.', 'vivid.', 'wild.', 'yours.'];
+    let i = 0;
+    setInterval(() => {
+      el.classList.add('cycle-out');
+      setTimeout(() => {
+        i = (i + 1) % words.length;
+        el.textContent = words[i];
+        el.classList.remove('cycle-out');
+        el.classList.add('cycle-in');
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          el.classList.remove('cycle-in');
+        }));
+      }, 160);
+    }, 1350);
+  })();
+
+</script>
+
+</body>
+</html>

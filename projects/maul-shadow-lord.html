@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maul: Shadow Lord — Mike Daniels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Inter+Tight:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --fg: #f2f1ec;
+    --fg-dim: rgba(242, 241, 236, 0.5);
+    --fg-faint: rgba(242, 241, 236, 0.15);
+    --accent: #ff6a5c;
+    --line: rgba(242, 241, 236, 0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--fg); }
+  body {
+    font-family: 'Inter Tight', system-ui, sans-serif;
+    font-feature-settings: 'ss01' on, 'cv11' on;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* =========================================================
+     NAV
+     ========================================================= */
+  nav.top {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 24px 32px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--fg);
+    mix-blend-mode: difference;
+    pointer-events: none;
+    transition: background-color 0.25s ease, backdrop-filter 0.25s ease, box-shadow 0.25s ease, mix-blend-mode 0s linear 0.25s;
+  }
+  nav.top.scrolled {
+    mix-blend-mode: normal;
+    background: rgba(10, 10, 10, 0.72);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background-color 0.25s ease, backdrop-filter 0.25s ease, box-shadow 0.25s ease;
+  }
+  nav.top > * { pointer-events: auto; }
+  nav.top .brand { display: flex; gap: 10px; align-items: center; }
+  nav.top .brand .logo {
+    display: block;
+    height: 52px;
+    width: auto;
+    mix-blend-mode: normal;
+    isolation: isolate;
+  }
+  nav.top .center { text-align: center; opacity: 0.7; }
+  nav.top .links { display: flex; gap: 24px; justify-content: flex-end; }
+  nav.top a:hover { opacity: 0.6; }
+
+  /* =========================================================
+     HERO — full-bleed image
+     ========================================================= */
+  .hero {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    background: #000;
+  }
+  .hero-still {
+    position: absolute;
+    inset: 0;
+    background: #000 url('assets/maul/lookA_01.jpg') center/cover no-repeat;
+    transform: scale(1);
+    animation: hero-breathe 22s ease-in-out infinite;
+  }
+  @keyframes hero-breathe {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.03); }
+  }
+  .hero-scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%),
+      linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 18%, transparent 72%, rgba(0,0,0,0.6) 100%);
+  }
+
+  /* =========================================================
+     TITLE BLOCK
+     ========================================================= */
+  .title-block {
+    padding: 72px 32px 96px;
+    border-bottom: 1px solid var(--line);
+  }
+  .title-block .hero-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 22px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  .title-block .hero-meta .dot { opacity: 0.5; }
+  .title-block-h {
+    font-family: 'Inter Tight', sans-serif;
+    font-weight: 700;
+    font-size: clamp(44px, 8vw, 128px);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    color: var(--fg);
+    max-width: 14ch;
+  }
+  .title-block-h em { font-style: normal; font-weight: 700; color: inherit; }
+
+  @media (max-width: 720px) {
+    .title-block { padding: 48px 20px 64px; }
+  }
+
+  /* =========================================================
+     BRIEF
+     ========================================================= */
+  .brief {
+    padding: 120px 32px 140px;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 80px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brief .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .brief .body {
+    max-width: 72ch;
+  }
+  .brief p {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: clamp(22px, 2.2vw, 32px);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.35;
+    color: var(--fg);
+    text-wrap: pretty;
+  }
+  .brief p + p {
+    margin-top: 1em;
+    color: var(--fg-dim);
+    font-size: clamp(18px, 1.6vw, 22px);
+    line-height: 1.5;
+  }
+  .brief p em { font-style: italic; color: var(--accent); }
+
+  /* =========================================================
+     STILLS
+     ========================================================= */
+  .stills {
+    padding: 100px 32px 120px;
+    border-bottom: 1px solid var(--line);
+  }
+  .stills-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 48px;
+  }
+  .stills .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  /* View toggle — matches the Portfolio work-tab pills */
+  .view-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .view-toggle .vt-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    padding: 6px 14px 6px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    cursor: pointer;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  }
+  .view-toggle .vt-btn:hover {
+    color: var(--fg);
+    border-color: var(--fg-dim);
+  }
+  .view-toggle .vt-btn.active {
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .view-toggle .vt-ico {
+    width: 12px; height: 12px;
+    display: inline-grid;
+    gap: 1.5px;
+  }
+  .view-toggle .vt-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+  .view-toggle .vt-grid span {
+    display: block;
+    background: currentColor;
+  }
+  .view-toggle .vt-single {
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 1.5px;
+  }
+  .view-toggle .vt-single span {
+    display: block;
+    background: currentColor;
+  }
+
+  /* Grid view — existing 4-col layout */
+  .stills-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+  }
+  /* Single view — stack full-width */
+  .stills-grid.is-single {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .stills-grid.is-single .still {
+    aspect-ratio: 16 / 9;
+  }
+  .still {
+    position: relative;
+    overflow: hidden;
+    background: #0f0f0f;
+    aspect-ratio: 2.4 / 1;
+    cursor: pointer;
+    transition: opacity 0.3s;
+  }
+  .still:hover { opacity: 0.92; }
+  .still .fill {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.001);
+    transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .still:hover .fill { transform: scale(1.03); }
+
+  @media (max-width: 880px) {
+    .stills-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* =========================================================
+     LIGHTBOX
+     ========================================================= */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: lb-fade 0.18s ease-out;
+  }
+  .lightbox[hidden] { display: none; }
+  @keyframes lb-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .lb-img {
+    max-width: 96vw;
+    max-height: 92vh;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .lb-close,
+  .lb-nav {
+    position: absolute;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .lb-close:hover,
+  .lb-nav:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.4);
+  }
+  .lb-close {
+    top: 24px; right: 24px;
+    width: 44px; height: 44px;
+    font-size: 24px;
+    line-height: 1;
+  }
+  .lb-nav {
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px; height: 48px;
+    font-size: 18px;
+  }
+  .lb-prev { left: 24px; }
+  .lb-next { right: 24px; }
+  .lb-counter {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* =========================================================
+     CREDITS
+     ========================================================= */
+  .credits {
+    padding: 100px 32px 140px;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 80px;
+  }
+  .credits .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .credits-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+  }
+  .credits-meta .item .k {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .credits-meta .item .v {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--fg);
+  }
+  .credits-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .credits-list .col {
+    display: flex;
+    flex-direction: column;
+  }
+  .credits-list .col + .col { margin-left: 32px; }
+  .col-heading {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding-bottom: 12px;
+    margin-bottom: 4px;
+  }
+  .credit-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 48px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    align-items: baseline;
+  }
+  .credit-row:first-child,
+  .credit-row:nth-child(2) { border-top: 1px solid var(--fg-faint); }
+  .credit-row .role {
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .credit-row .name { color: var(--fg); }
+
+  /* =========================================================
+     NEXT PROJECT
+     ========================================================= */
+  .next-project {
+    padding: 80px 32px 100px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+    position: relative;
+  }
+  .next-project:hover { background: rgba(255,255,255,0.02); }
+  .next-project .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .next-project .title {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: clamp(40px, 7vw, 104px);
+    font-weight: 300;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+  .next-project .title em {
+    font-style: normal;
+    color: inherit;
+  }
+  .next-project .arrow {
+    position: absolute;
+    top: 80px;
+    right: 32px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    transition: transform 0.4s;
+  }
+  .next-project:hover .arrow { transform: translateX(10px); }
+
+  /* =========================================================
+     FOOTER
+     ========================================================= */
+  footer {
+    padding: 60px 32px 32px;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+  @media (max-width: 880px) {
+    .brief, .credits { grid-template-columns: 1fr; gap: 32px; padding: 60px 24px 80px; }
+    .credits-list { grid-template-columns: 1fr; }
+    .credits-list .col + .col { margin-left: 0; margin-top: 32px; }
+    .credits-meta { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- =========================================================
+     NAV
+     ========================================================= -->
+<nav class="top">
+  <div class="brand">
+    <a href="../Portfolio.html" aria-label="Mike Daniels — home">
+      <img class="logo" src="../assets/mike-daniels-logo.png" alt="Mike Daniels" />
+    </a>
+  </div>
+  <div class="center">MAUL: SHADOW LORD — MAIN TITLE</div>
+  <div class="links">
+    <a href="../Portfolio.html#work">WORK</a>
+    <a href="../Portfolio.html#about">ABOUT</a>
+    <a href="../Portfolio.html#contact">CONTACT</a>
+  </div>
+</nav>
+
+<!-- =========================================================
+     HERO
+     ========================================================= -->
+<section class="hero" data-screen-label="01 Hero">
+  <div class="hero-still"></div>
+  <div class="hero-scrim"></div>
+</section>
+
+<!-- =========================================================
+     TITLE BLOCK
+     ========================================================= -->
+<section class="title-block" data-screen-label="02 Title">
+  <div class="hero-meta">
+    <span>Title Treatments</span>
+    <span class="dot">/</span>
+    <span>Lucasfilm · Disney+</span>
+  </div>
+  <h1 class="title-block-h">Maul:<br><em>Shadow Lord</em></h1>
+</section>
+
+<!-- =========================================================
+     BRIEF
+     ========================================================= -->
+<section class="brief" data-screen-label="03 Brief">
+  <div class="label">BRIEF</div>
+  <div class="body">
+    <p>This was an exploration of title treatments for <em>Maul: Shadow Lord</em>, an animated series centered on Darth Maul and building on the legacy established by previous Star Wars animated projects.</p>
+    <p>The goal was to create something bold, gritty, and unapologetically in-your-face, leaning into the intensity and presence of the character. The designs pull from Maul's visual language, incorporating elements like his tattoo markings, Sith wardrobe, and the stylized rendering approach of the series itself.</p>
+  </div>
+</section>
+
+<!-- =========================================================
+     STILLS
+     ========================================================= -->
+<section class="stills" data-screen-label="04 Stills">
+  <div class="stills-head">
+    <div class="label">STYLEFRAMES</div>
+    <div class="view-toggle" role="tablist" aria-label="Stills view">
+      <button class="vt-btn active" data-view="grid" role="tab" aria-selected="true">
+        <span class="vt-ico vt-grid"><span></span><span></span><span></span><span></span></span>
+        GRID
+      </button>
+      <button class="vt-btn" data-view="single" role="tab" aria-selected="false">
+        <span class="vt-ico vt-single"><span></span><span></span><span></span></span>
+        SINGLE
+      </button>
+    </div>
+  </div>
+  <div class="stills-grid" id="stillsGrid">
+    <div class="still"><div class="fill" style="background-image:url('assets/maul/lookA_01.jpg')"></div></div>
+    <div class="still"><div class="fill" style="background-image:url('assets/maul/lookA_02.jpg')"></div></div>
+    <div class="still"><div class="fill" style="background-image:url('assets/maul/lookB_02.jpg')"></div></div>
+    <div class="still"><div class="fill" style="background-image:url('assets/maul/lookB_03.jpg')"></div></div>
+    <div class="still"><div class="fill" style="background-image:url('assets/maul/lookC_01.jpg')"></div></div>
+    <div class="still"><div class="fill" style="background-image:url('assets/maul/lookC_02.jpg')"></div></div>
+    <div class="still"><div class="fill" style="background-image:url('assets/maul/lookD_01.jpg')"></div></div>
+    <div class="still"><div class="fill" style="background-image:url('assets/maul/lookD_02.jpg')"></div></div>
+    <div class="still"><div class="fill" style="background-image:url('assets/maul/lookE_01.jpg')"></div></div>
+    <div class="still"><div class="fill" style="background-image:url('assets/maul/lookE_02.jpg')"></div></div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="image viewer" hidden>
+    <button class="lb-close" id="lbClose" aria-label="close">×</button>
+    <button class="lb-nav lb-prev" id="lbPrev" aria-label="previous">←</button>
+    <button class="lb-nav lb-next" id="lbNext" aria-label="next">→</button>
+    <img class="lb-img" id="lbImg" alt="">
+    <div class="lb-counter" id="lbCounter"></div>
+  </div>
+</section>
+
+<!-- =========================================================
+     CREDITS
+     ========================================================= -->
+<section class="credits" data-screen-label="05 Credits">
+  <div class="label">CREDITS</div>
+  <div>
+    <div class="credits-meta">
+      <div class="item"><span class="k">Client</span><span class="v">Lucasfilm · Disney+</span></div>
+      <div class="item"><span class="k">Agency</span><span class="v">Aspect</span></div>
+    </div>
+
+    <div class="credits-list">
+      <div class="col">
+        <div class="credit-row"><span class="role">Design</span><span class="name">Michael Daniels</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     NEXT PROJECT
+     ========================================================= -->
+<a class="next-project" href="sonic-4.html">
+  <span class="label">NEXT PROJECT</span>
+  <span class="title">Sonic the<br>Hedgehog <em>4</em></span>
+  <span class="arrow">→</span>
+</a>
+
+<!-- =========================================================
+     FOOTER
+     ========================================================= -->
+<footer>
+  <span>© 2026 MIKE DANIELS</span>
+  <span><a href="../Portfolio.html">← BACK TO INDEX</a></span>
+</footer>
+
+<script>
+  // Scroll state for nav — matches Sonic page
+  const nav = document.querySelector('nav.top');
+  const onScroll = () => {
+    if (window.scrollY > 24) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Stills view toggle (GRID / SINGLE)
+  (function(){
+    const grid = document.getElementById('stillsGrid');
+    const btns = document.querySelectorAll('.view-toggle .vt-btn');
+    if (!grid || !btns.length) return;
+    btns.forEach(b => {
+      b.addEventListener('click', () => {
+        const view = b.dataset.view;
+        btns.forEach(x => {
+          const active = x === b;
+          x.classList.toggle('active', active);
+          x.setAttribute('aria-selected', String(active));
+        });
+        grid.classList.toggle('is-single', view === 'single');
+      });
+    });
+  })();
+
+  // Lightbox — click a still to open, arrow keys / buttons to nav, Esc to close
+  (function(){
+    const grid = document.getElementById('stillsGrid');
+    const lb = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lbImg');
+    const lbCounter = document.getElementById('lbCounter');
+    const lbClose = document.getElementById('lbClose');
+    const lbPrev = document.getElementById('lbPrev');
+    const lbNext = document.getElementById('lbNext');
+    if (!grid || !lb) return;
+
+    // Pull image URLs from each still's .fill background-image
+    const fills = Array.from(grid.querySelectorAll('.still .fill'));
+    const urls = fills.map(f => {
+      const m = f.style.backgroundImage.match(/url\(["']?(.+?)["']?\)/);
+      return m ? m[1] : '';
+    });
+    let idx = 0;
+
+    function open(i) {
+      idx = (i + urls.length) % urls.length;
+      lbImg.src = urls[idx];
+      lbCounter.textContent = String(idx + 1).padStart(2, '0') + ' / ' + String(urls.length).padStart(2, '0');
+      lb.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+    function close() {
+      lb.hidden = true;
+      document.body.style.overflow = '';
+    }
+
+    grid.addEventListener('click', (e) => {
+      const still = e.target.closest('.still');
+      if (!still) return;
+      const i = Array.from(grid.children).indexOf(still);
+      if (i >= 0) open(i);
+    });
+    lbClose.addEventListener('click', close);
+    lbPrev.addEventListener('click', () => open(idx - 1));
+    lbNext.addEventListener('click', () => open(idx + 1));
+    lb.addEventListener('click', (e) => { if (e.target === lb) close(); });
+    document.addEventListener('keydown', (e) => {
+      if (lb.hidden) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowLeft') open(idx - 1);
+      else if (e.key === 'ArrowRight') open(idx + 1);
+    });
+  })();
+</script>
+
+</body>
+</html>

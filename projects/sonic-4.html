@@ -1,0 +1,1400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sonic the Hedgehog 4 — Mike Daniels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Inter+Tight:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --fg: #f2f1ec;
+    --fg-dim: rgba(242, 241, 236, 0.5);
+    --fg-faint: rgba(242, 241, 236, 0.15);
+    --accent: #f2f1ec;
+    --line: rgba(242, 241, 236, 0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--fg); }
+  body {
+    font-family: 'Inter Tight', system-ui, sans-serif;
+    font-feature-settings: 'ss01' on, 'cv11' on;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* ============================================================
+     NAV
+     ============================================================ */
+  nav.top {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 24px 32px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--fg);
+    mix-blend-mode: difference;
+    pointer-events: none;
+    transition: background-color 0.25s ease, backdrop-filter 0.25s ease, box-shadow 0.25s ease, mix-blend-mode 0s linear 0.25s;
+  }
+  /* When scrolled past the hero, give the nav a subtle dark backdrop + shadow
+     so it reads clearly against bright stills. Drop the blend mode so the
+     backdrop actually stays opaque. */
+  nav.top.scrolled {
+    mix-blend-mode: normal;
+    background: rgba(10, 10, 10, 0.72);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    transition: background-color 0.25s ease, backdrop-filter 0.25s ease, box-shadow 0.25s ease;
+  }
+  nav.top > * { pointer-events: auto; }
+  nav.top .brand { display: flex; gap: 10px; align-items: center; }
+  nav.top .brand .logo {
+    display: block;
+    height: 52px;
+    width: auto;
+    mix-blend-mode: normal;
+    isolation: isolate;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  nav.top .center { text-align: center; opacity: 0.7; }
+  nav.top .links { display: flex; gap: 24px; justify-content: flex-end; }
+  nav.top a:hover { opacity: 0.6; }
+
+  /* ============================================================
+     BACK / BREADCRUMB BAR
+     ============================================================ */
+  .crumb {
+    position: fixed;
+    top: 72px;
+    left: 0; right: 0;
+    z-index: 45;
+    padding: 10px 32px;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg);
+    mix-blend-mode: difference;
+    pointer-events: none;
+  }
+  .crumb > * { pointer-events: auto; }
+  .crumb a { display: inline-flex; align-items: center; gap: 8px; }
+  .crumb a:hover { opacity: 0.6; }
+
+  /* ============================================================
+     HERO — full-bleed video
+     ============================================================ */
+  .hero {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    background: #000;
+  }
+  .hero video,
+  .hero iframe,
+  .hero .poster {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .hero .poster {
+    background: #000 url('assets/sonic/sonic4_still_20.jpg') center/cover no-repeat;
+    z-index: 1;
+  }
+  .hero iframe { z-index: 2; }
+  .hero-overlay { z-index: 3; }
+  .hero-click {
+    position: absolute; inset: 0;
+    z-index: 3;
+    cursor: pointer;
+  }
+  .hero-bottom { z-index: 4; }
+
+  /* Keep the poster above the iframe until playback actually starts,
+     so we never flash Vimeo's default thumbnail frame. */
+  .hero .poster {
+    transition: opacity 0.6s ease 0.2s;
+  }
+  .hero.loading .poster {
+    z-index: 3;
+    opacity: 1;
+  }
+  .hero.playing-started .poster {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Playbar — single bottom row, fades in on hover / pause */
+  .hero-playbar {
+    position: absolute;
+    left: 32px;
+    right: 32px;
+    bottom: 28px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.85);
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+  }
+  .hero:hover .hero-playbar,
+  .hero.paused .hero-playbar,
+  .hero.scrubbing .hero-playbar,
+  .hero.show-controls .hero-playbar {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* Fullscreen: hero section becomes the fullscreen target so our custom
+     playbar travels into fullscreen along with the video. */
+  .hero:fullscreen,
+  .hero:-webkit-full-screen {
+    background: #000;
+  }
+  .hero:fullscreen .hero-playbar,
+  .hero:-webkit-full-screen .hero-playbar {
+    left: 48px; right: 48px; bottom: 40px;
+  }
+  /* In fullscreen, hide controls when idle regardless of hover state */
+  .hero.fs-idle .hero-playbar {
+    opacity: 0 !important;
+    transform: translateY(6px) !important;
+    pointer-events: none !important;
+  }
+  .hero.fs-idle { cursor: none; }
+  .hero-playbar .time { min-width: 38px; text-align: center; }
+  .hero-playbar .track {
+    flex: 1;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+  }
+  .hero-playbar .track-rail {
+    width: 100%;
+    height: 2px;
+    background: rgba(255,255,255,0.25);
+    position: relative;
+    overflow: hidden;
+    transition: height 0.15s ease;
+  }
+  .hero-playbar .track:hover .track-rail { height: 3px; }
+  .hero-playbar .track-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 0%;
+    background: #fff;
+  }
+  .hero-playbar .replay-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.85);
+    font: inherit;
+    padding: 4px 6px;
+    cursor: pointer;
+    letter-spacing: 0.15em;
+    transition: color 0.15s ease;
+  }
+  .hero-playbar .replay-btn:hover { color: #fff; }
+
+  /* Icon-only buttons in the playbar (sound / fullscreen) */
+  .pb-icon {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.85);
+    width: 28px; height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s ease, transform 0.15s ease;
+  }
+  .pb-icon:hover { color: #fff; }
+  .pb-icon svg { display: block; width: 16px; height: 16px; }
+  /* Muted speaker gets a diagonal slash overlay */
+  .pb-icon.muted .spk-on { display: none; }
+  .pb-icon:not(.muted) .spk-off { display: none; }
+
+  /* Volume control — slider slides out from speaker icon on hover */
+  .vol-wrap {
+    display: inline-flex;
+    align-items: center;
+    height: 28px;
+  }
+  .vol-slider {
+    width: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    height: 18px;
+    transition: width 0.25s ease, margin-left 0.25s ease, opacity 0.2s ease;
+    opacity: 0;
+    margin-left: 0;
+  }
+  .vol-wrap:hover .vol-slider,
+  .vol-wrap:focus-within .vol-slider {
+    width: 68px;
+    margin-left: 8px;
+    opacity: 1;
+  }
+  .vol-rail {
+    position: relative;
+    width: 100%;
+    height: 18px; /* tall hit area */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+  .vol-rail::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: rgba(255,255,255,0.25);
+    transition: height 0.15s ease;
+  }
+  .vol-rail:hover::before { height: 3px; }
+  .vol-fill {
+    position: absolute;
+    left: 0; top: 50%;
+    transform: translateY(-50%);
+    height: 2px;
+    width: 0%;
+    background: #fff;
+    pointer-events: none;
+  }
+
+  /* Play indicator — only visible when paused */
+  .hero-play {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.92);
+    width: 88px; height: 88px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 4;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .hero-play::before {
+    content: "";
+    width: 0; height: 0;
+    border-left: 18px solid #fff;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    margin-left: 4px;
+  }
+  .hero.paused .hero-play {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .hero .poster::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.55) 100%);
+  }
+
+  .hero iframe {
+    /* Over-scale the Vimeo iframe so its 16:9 fills the full-bleed viewport —
+       background mode center-crops automatically via transform. */
+    top: 50%;
+    left: 50%;
+    width: 177.78vh; /* 16/9 * 100vh */
+    min-width: 100vw;
+    height: 56.25vw; /* 9/16 * 100vw */
+    min-height: 100vh;
+    transform: translate(-50%, -50%);
+    border: 0;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 140px 32px 32px;
+    z-index: 3;
+    pointer-events: none;
+  }
+  .hero-overlay > * { pointer-events: auto; }
+
+  .hero-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+  .hero-meta .dot { opacity: 0.5; }
+
+  .hero-title {
+    font-family: 'Inter Tight', sans-serif;
+    font-weight: 400;
+    font-size: clamp(44px, 8vw, 128px);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    color: #fff;
+    max-width: 14ch;
+  }
+  .hero-title em { font-style: italic; font-weight: 400; }
+
+  /* ==========================================================
+     TITLE BLOCK (under video)
+     ========================================================== */
+  .title-block {
+    padding: 72px 32px 96px;
+    border-bottom: 1px solid var(--line);
+  }
+  .title-block .hero-meta { margin-bottom: 18px; }
+  .title-block-h {
+    font-family: 'Inter Tight', sans-serif;
+    font-weight: 700;
+    font-size: clamp(44px, 8vw, 128px);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    color: var(--fg);
+    max-width: 14ch;
+  }
+  .title-block-h em { font-style: normal; font-weight: 700; }
+  @media (max-width: 720px) {
+    .title-block { padding: 48px 20px 64px; }
+  }
+
+  .hero-bottom {
+    position: absolute;
+    bottom: 32px;
+    right: 32px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    z-index: 4;
+  }
+
+  .play-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border: 1px solid rgba(255,255,255,0.7);
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .play-btn:hover { background: rgba(255,255,255,0.1); }
+  .play-btn .tri {
+    width: 0; height: 0;
+    border-left: 7px solid #fff;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    margin-left: 1px;
+  }
+  .play-btn .pause {
+    width: 8px; height: 10px;
+    border-left: 2px solid #fff;
+    border-right: 2px solid #fff;
+    display: none;
+  }
+  .play-btn.playing .tri { display: none; }
+  .play-btn.playing .pause { display: block; }
+
+  .mute-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255,255,255,0.7);
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .mute-btn:hover { background: rgba(255,255,255,0.1); }
+  .mute-btn .spk {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor;
+    transition: background 0.2s, box-shadow 0.3s;
+  }
+  /* Muted state: red dot with a soft pulse */
+  .mute-btn.muted .spk {
+    background: #ff3344;
+    box-shadow: 0 0 0 0 rgba(255, 51, 68, 0.6);
+    animation: mute-pulse 1.6s ease-out infinite;
+  }
+  @keyframes mute-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 51, 68, 0.6); }
+    70%  { box-shadow: 0 0 0 6px rgba(255, 51, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 51, 68, 0); }
+  }
+  .mute-btn .fs-ico {
+    width: 10px; height: 10px;
+    position: relative;
+  }
+  .mute-btn .fs-ico::before,
+  .mute-btn .fs-ico::after {
+    content: "";
+    position: absolute;
+    width: 4px; height: 4px;
+    border: 1.5px solid currentColor;
+  }
+  .mute-btn .fs-ico::before { top: 0; left: 0; border-right: none; border-bottom: none; }
+  .mute-btn .fs-ico::after { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+  /* ============================================================
+     BRIEF
+     ============================================================ */
+  .brief {
+    padding: 120px 32px 140px;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 80px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brief .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .brief .body {
+    max-width: 72ch;
+  }
+  .brief p {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: clamp(22px, 2.2vw, 32px);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1.35;
+    color: var(--fg);
+    text-wrap: pretty;
+  }
+  .brief p + p {
+    margin-top: 1em;
+    color: var(--fg-dim);
+    font-size: clamp(18px, 1.6vw, 22px);
+    line-height: 1.5;
+  }
+  .brief p em { font-style: italic; color: #ff6a5c; }
+
+  .brief-tags {
+    margin-top: 40px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .brief-tags span {
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    border-radius: 999px;
+  }
+
+  /* ============================================================
+     STILLS
+     ============================================================ */
+  .stills {
+    padding: 100px 32px 120px;
+    border-bottom: 1px solid var(--line);
+  }
+  .stills .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+
+  .stills-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+  }
+  .still {
+    position: relative;
+    overflow: hidden;
+    background: #0f0f0f;
+    aspect-ratio: 2.4 / 1;
+    cursor: pointer;
+    transition: opacity 0.3s;
+  }
+  .still:hover { opacity: 0.92; }
+  .still .fill,
+  .still img {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scale(1.001);
+    transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .still:hover .fill,
+  .still:hover img { transform: scale(1.03); }
+  .still .num {
+    display: none;
+  }
+
+  /* ============================================================
+     LIGHTBOX
+     ============================================================ */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: lb-fade 0.18s ease-out;
+  }
+  .lightbox[hidden] { display: none; }
+  @keyframes lb-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .lb-img {
+    max-width: 96vw;
+    max-height: 92vh;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .lb-close,
+  .lb-nav {
+    position: absolute;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .lb-close:hover,
+  .lb-nav:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.4);
+  }
+  .lb-close {
+    top: 24px; right: 24px;
+    width: 44px; height: 44px;
+    font-size: 24px;
+    line-height: 1;
+  }
+  .lb-nav {
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px; height: 48px;
+    font-size: 18px;
+  }
+  .lb-prev { left: 24px; }
+  .lb-next { right: 24px; }
+  .lb-counter {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.55);
+  }
+  @media (max-width: 880px) {
+    .stills-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .still .fill {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.001);
+    transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .still:hover .fill { transform: scale(1.04); }
+
+  .still .caption {
+    position: absolute;
+    bottom: 10px;
+    left: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 2;
+    mix-blend-mode: difference;
+  }
+
+  /* Synthetic still gradients (placeholders) */
+  .g-a { background: radial-gradient(circle at 60% 50%, #ff2bd6 0%, #4a1a6e 40%, #0a0a1a 100%); }
+  .g-b { background: linear-gradient(135deg, #00b4ff 0%, #0033aa 60%, #060018 100%); }
+  .g-c { background: radial-gradient(ellipse at center, #ffd24a 0%, #d43a1a 50%, #200800 100%); }
+  .g-d { background: linear-gradient(180deg, #1a0030 0%, #ff0099 50%, #00b4ff 100%); }
+  .g-e { background: radial-gradient(circle at 30% 70%, #ff0080 0%, #220038 60%, #000 100%); }
+  .g-f { background: linear-gradient(90deg, #050510, #3a1470, #ff2bd6, #00e5ff, #050510); }
+
+  /* Real sonic hero */
+  .still.sonic-hero {
+    background: #000 url('assets/sonic/sonic4_still_01.jpg') center/cover no-repeat;
+  }
+
+  /* Inline scanlines + grain for synthetic stills */
+  .g-a::after, .g-b::after, .g-c::after, .g-d::after, .g-e::after, .g-f::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+
+  /* ============================================================
+     CREDITS
+     ============================================================ */
+  .credits {
+    padding: 100px 32px 140px;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 80px;
+  }
+  .credits .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .credits-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .credit-row {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 48px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    align-items: baseline;
+  }
+  .credit-row:first-child,
+  .credit-row:nth-child(2) { border-top: 1px solid var(--fg-faint); }
+  .credit-row .role {
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .credit-row .name {
+    color: var(--fg);
+  }
+  .credit-row .name a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 1px;
+    transition: border-color 0.2s ease, opacity 0.2s ease;
+  }
+  .credit-row .name a:hover {
+    border-bottom-color: currentColor;
+  }
+  .credit-row .name a::after {
+    content: "↗";
+    display: inline-block;
+    font-size: 1.7em;
+    margin-left: 3px;
+    vertical-align: middle;
+    line-height: 0;
+    color: var(--fg-dim);
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+  .credit-row .name a:hover::after {
+    transform: translate(2px, -2px);
+    color: var(--fg);
+  }
+  .credits-list .col {
+    display: flex;
+    flex-direction: column;
+  }
+  .credits-list .col + .col { margin-left: 32px; }
+  .col-heading {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding-bottom: 12px;
+    margin-bottom: 4px;
+  }
+
+  /* Credits meta block (top of credits) */
+  .credits-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+  }
+  .credits-meta .item .k {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .credits-meta .item .v {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--fg);
+  }
+
+  /* ============================================================
+     NEXT PROJECT
+     ============================================================ */
+  .next-project {
+    padding: 80px 32px 100px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+    position: relative;
+  }
+  .next-project:hover { background: rgba(255,255,255,0.02); }
+  .next-project .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .next-project .title {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: clamp(40px, 7vw, 104px);
+    font-weight: 300;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+  .next-project .title em {
+    font-style: normal;
+    color: inherit;
+  }
+  .next-project .arrow {
+    position: absolute;
+    top: 80px;
+    right: 32px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    transition: transform 0.4s;
+  }
+  .next-project:hover .arrow { transform: translateX(10px); }
+
+  /* ============================================================
+     FOOTER
+     ============================================================ */
+  footer {
+    padding: 60px 32px 32px;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--fg-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media (max-width: 880px) {
+    .brief, .credits { grid-template-columns: 1fr; gap: 32px; padding: 60px 24px 80px; }
+    .credits-list { grid-template-columns: 1fr; }
+    .credits-list .col + .col { margin-left: 0; margin-top: 0; }
+    .credits-meta { grid-template-columns: repeat(2, 1fr); }
+    /* Fix: give role column a fixed width so Design + Aspect rows align when stacked */
+    .credit-row { grid-template-columns: 180px 1fr; gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- =========================================================
+     NAV
+     ========================================================= -->
+<nav class="top">
+  <div class="brand">
+    <a href="../Portfolio.html" aria-label="Mike Daniels — home">
+      <img class="logo" src="../assets/mike-daniels-logo.png" alt="Mike Daniels" />
+    </a>
+  </div>
+  <div class="center">SONIC THE HEDGEHOG 4 — TITLE REVEAL</div>
+  <div class="links">
+    <a href="../Portfolio.html#work">WORK</a>
+    <a href="../Portfolio.html#about">ABOUT</a>
+    <a href="../Portfolio.html#contact">CONTACT</a>
+  </div>
+</nav>
+
+<div class="crumb">
+</div>
+
+<!-- =========================================================
+     HERO VIDEO — clean, no overlay
+     ========================================================= -->
+<section class="hero loading" data-screen-label="01 Hero">
+  <iframe id="vimeoPlayer"
+    src="https://player.vimeo.com/video/1175290670?autoplay=1&loop=1&muted=1&controls=0&byline=0&title=0&portrait=0&dnt=1"
+    frameborder="0"
+    allow="autoplay; fullscreen; picture-in-picture"
+    allowfullscreen
+    title="Sonic 4 Title Reveal"></iframe>
+  <div class="poster"></div>
+  <div class="hero-click" id="heroClick" aria-label="toggle playback"></div>
+  <div class="hero-play" aria-hidden="true"></div>
+
+  <div class="hero-playbar" id="heroPlaybar">
+    <span class="time" id="pbCur">0:00</span>
+    <div class="track" id="pbTrack">
+      <div class="track-rail"><div class="track-fill" id="pbFill"></div></div>
+    </div>
+    <span class="time" id="pbDur">0:00</span>
+    <span class="vol-wrap">
+      <button class="pb-icon muted" id="audioBtn" aria-label="toggle sound" aria-pressed="false">
+        <svg class="spk-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/>
+          <path d="M16 8c1.2 1 2 2.4 2 4s-.8 3-2 4"/>
+          <path d="M19 5c2.2 1.7 3.5 4.2 3.5 7s-1.3 5.3-3.5 7"/>
+        </svg>
+        <svg class="spk-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/>
+          <line x1="17" y1="9" x2="22" y2="14"/>
+          <line x1="22" y1="9" x2="17" y2="14"/>
+        </svg>
+      </button>
+      <span class="vol-slider">
+        <span class="vol-rail" id="volRail" role="slider" aria-label="volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" tabindex="0">
+          <span class="vol-fill" id="volFill"></span>
+        </span>
+      </span>
+    </span>
+    <button class="pb-icon" id="fsBtn" aria-label="fullscreen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 9V4h5"/>
+        <path d="M20 9V4h-5"/>
+        <path d="M4 15v5h5"/>
+        <path d="M20 15v5h-5"/>
+      </svg>
+    </button>
+    <button class="replay-btn" id="pbReplay" aria-label="restart">↺ REPLAY</button>
+  </div>
+</section>
+
+<!-- =========================================================
+     TITLE BLOCK (under video)
+     ========================================================= -->
+<section class="title-block" data-screen-label="02 Title">
+  <div class="hero-meta">
+    <span>Title Reveal</span>
+    <span class="dot">/</span>
+    <span>Paramount Pictures</span>
+  </div>
+  <h1 class="title-block-h">Sonic the<br>Hedgehog <em>4</em></h1>
+</section>
+
+<!-- =========================================================
+     BRIEF
+     ========================================================= -->
+<section class="brief" data-screen-label="03 Brief">
+  <div class="label">BRIEF</div>
+  <div class="body">
+    <p>A title reveal for <em>Sonic the Hedgehog 4</em> — charging the iconic lockup with raw electricity. Neon filaments arc and snap into place as the film's title ignites out of the dark.</p>
+    <p>Designed and animated at Aspect, with Houdini-driven lightning and FX. The goal was energy you could feel through the screen: fast, luminous, and unmistakably Sonic.</p>
+  </div>
+</section>
+
+<!-- =========================================================
+     STILLS
+     ========================================================= -->
+<section class="stills" data-screen-label="03 Stills">
+  <div class="label">SELECTED STILLS</div>
+  <div class="stills-grid">
+    <div class="still"><img src="assets/sonic/sonic4_still_01.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_02.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_03.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_04.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_05.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_06.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_07.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_08.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_09.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_10.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_11.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_12.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_13.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_14.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_15.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_16.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_17.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_18.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_19.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_20.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_21.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_22.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_23.jpg" alt=""></div>
+    <div class="still"><img src="assets/sonic/sonic4_still_24.jpg" alt=""></div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="image viewer" hidden>
+    <button class="lb-close" id="lbClose" aria-label="close">×</button>
+    <button class="lb-nav lb-prev" id="lbPrev" aria-label="previous">←</button>
+    <button class="lb-nav lb-next" id="lbNext" aria-label="next">→</button>
+    <img class="lb-img" id="lbImg" alt="">
+    <div class="lb-counter" id="lbCounter"></div>
+  </div>
+</section>
+
+<!-- =========================================================
+     CREDITS
+     ========================================================= -->
+<section class="credits" data-screen-label="04 Credits">
+  <div class="label">CREDITS</div>
+  <div>
+    <div class="credits-meta">
+      <div class="item"><span class="k">Client</span><span class="v">Paramount Pictures</span></div>
+      <div class="item"><span class="k">Agency</span><span class="v">Aspect</span></div>
+    </div>
+
+    <div class="credits-list">
+      <div class="col">
+        <div class="col-heading">Design</div>
+        <div class="credit-row"><span class="role">Design / Animation</span><span class="name">Michael Daniels</span></div>
+        <div class="credit-row"><span class="role">Houdini / FX</span><span class="name"><a href="https://julianloscher.com/" target="_blank" rel="noopener">Julian Loscher</a></span></div>
+        <div class="credit-row"><span class="role">Creative Director</span><span class="name">Brad Colwell, Jon Berkowitz</span></div>
+        <div class="credit-row"><span class="role">Senior Producer</span><span class="name">Kate Lynn Abigail</span></div>
+        <div class="credit-row"><span class="role">Graphics Coordinator</span><span class="name">Marcella Maggio</span></div>
+      </div>
+      <div class="col">
+        <div class="col-heading">Aspect</div>
+        <div class="credit-row"><span class="role">Executive Creative Director</span><span class="name">Nati Braunstein</span></div>
+        <div class="credit-row"><span class="role">Creative Director</span><span class="name">Lauren Hutchinson</span></div>
+        <div class="credit-row"><span class="role">Editor / Sound Design</span><span class="name">Steve Mannella</span></div>
+        <div class="credit-row"><span class="role">Associate Producer</span><span class="name">Haley Vasquez</span></div>
+        <div class="credit-row"><span class="role">Coordinator</span><span class="name">Jasmine Perez</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     NEXT PROJECT
+     ========================================================= -->
+<a class="next-project" href="maul-shadow-lord.html">
+  <span class="label">NEXT PROJECT</span>
+  <span class="title">Maul: Shadow Lord</span>
+  <span class="arrow">→</span>
+</a>
+
+<!-- =========================================================
+     FOOTER
+     ========================================================= -->
+<footer>
+  <span>© 2026 MIKE DANIELS</span>
+  <span id="clock">— — : — —</span>
+  <span><a href="Portfolio.html">← BACK TO INDEX</a></span>
+</footer>
+
+<script src="https://player.vimeo.com/api/player.js"></script>
+<script>
+  /* ==========================================================
+     LIGHTBOX
+     ========================================================== */
+  (function(){
+    const grid = document.querySelector('.stills-grid');
+    const lb = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lbImg');
+    const lbCounter = document.getElementById('lbCounter');
+    const lbClose = document.getElementById('lbClose');
+    const lbPrev = document.getElementById('lbPrev');
+    const lbNext = document.getElementById('lbNext');
+    if (!grid || !lb) return;
+
+    const imgs = Array.from(grid.querySelectorAll('.still img'));
+    let idx = 0;
+
+    function open(i) {
+      idx = (i + imgs.length) % imgs.length;
+      lbImg.src = imgs[idx].src;
+      lbCounter.textContent = String(idx + 1).padStart(2, '0') + ' / ' + String(imgs.length).padStart(2, '0');
+      lb.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+    function close() {
+      lb.hidden = true;
+      document.body.style.overflow = '';
+    }
+
+    grid.addEventListener('click', (e) => {
+      const still = e.target.closest('.still');
+      if (!still) return;
+      const i = imgs.indexOf(still.querySelector('img'));
+      if (i >= 0) open(i);
+    });
+
+    lbClose.addEventListener('click', close);
+    lbPrev.addEventListener('click', () => open(idx - 1));
+    lbNext.addEventListener('click', () => open(idx + 1));
+
+    // Click outside image to close
+    lb.addEventListener('click', (e) => {
+      if (e.target === lb) close();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (lb.hidden) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowLeft') open(idx - 1);
+      else if (e.key === 'ArrowRight') open(idx + 1);
+    });
+  })();
+</script>
+
+<script>
+  /* ==========================================================
+     VIMEO PLAYER CONTROLS
+     ========================================================== */
+  (function(){
+    const iframe = document.getElementById('vimeoPlayer');
+    if (!iframe || typeof Vimeo === 'undefined') return;
+    const player = new Vimeo.Player(iframe);
+    const audioBtn = document.getElementById('audioBtn');
+    const fsBtn = document.getElementById('fsBtn');
+
+    let muted = true;
+    let lastVolume = 1;
+    audioBtn.addEventListener('click', async () => {
+      muted = !muted;
+      await player.setMuted(muted);
+      if (!muted) {
+        const v = lastVolume > 0.05 ? lastVolume : 1;
+        await player.setVolume(v);
+        updateVolUI(v);
+      }
+      audioBtn.classList.toggle('muted', muted);
+      audioBtn.setAttribute('aria-pressed', String(!muted));
+    });
+
+    // Volume slider
+    const volRail = document.getElementById('volRail');
+    const volFill = document.getElementById('volFill');
+    function updateVolUI(v) {
+      volFill.style.width = (v * 100) + '%';
+      volRail.setAttribute('aria-valuenow', String(Math.round(v * 100)));
+    }
+    updateVolUI(1);
+    function volFromEvent(ev) {
+      const r = volRail.getBoundingClientRect();
+      const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
+      return Math.max(0, Math.min(1, x / r.width));
+    }
+    async function setVolFromEvent(ev) {
+      const v = volFromEvent(ev);
+      lastVolume = v;
+      updateVolUI(v);
+      await player.setVolume(v);
+      // Auto-un/mute based on slider position
+      if (v === 0 && !muted) {
+        muted = true; await player.setMuted(true);
+        audioBtn.classList.add('muted'); audioBtn.setAttribute('aria-pressed', 'false');
+      } else if (v > 0 && muted) {
+        muted = false; await player.setMuted(false);
+        audioBtn.classList.remove('muted'); audioBtn.setAttribute('aria-pressed', 'true');
+      }
+    }
+    let volDragging = false;
+    volRail.addEventListener('pointerdown', (ev) => {
+      volDragging = true;
+      volRail.setPointerCapture(ev.pointerId);
+      setVolFromEvent(ev);
+    });
+    volRail.addEventListener('pointermove', (ev) => {
+      if (!volDragging) return;
+      setVolFromEvent(ev);
+    });
+    volRail.addEventListener('pointerup', (ev) => {
+      volDragging = false;
+      try { volRail.releasePointerCapture(ev.pointerId); } catch(e) {}
+    });
+    volRail.addEventListener('keydown', async (e) => {
+      let v = lastVolume;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') v = Math.max(0, v - 0.1);
+      else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') v = Math.min(1, v + 0.1);
+      else return;
+      e.preventDefault();
+      lastVolume = v;
+      updateVolUI(v);
+      await player.setVolume(v);
+      if (v > 0 && muted) {
+        muted = false; await player.setMuted(false);
+        audioBtn.classList.remove('muted'); audioBtn.setAttribute('aria-pressed', 'true');
+      }
+    });
+
+    fsBtn.addEventListener('click', async () => {
+      // Fullscreen the hero SECTION so our custom controls are visible
+      // inside fullscreen too (rather than fullscreening the raw iframe).
+      const el = document.querySelector('.hero');
+      const isFs = document.fullscreenElement || document.webkitFullscreenElement;
+      try {
+        if (isFs) {
+          if (document.exitFullscreen) await document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        } else if (el && el.requestFullscreen) {
+          await el.requestFullscreen();
+        } else if (el && el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen();
+        }
+      } catch(e) {
+        // Last-resort fallback: fullscreen the iframe
+        if (iframe.requestFullscreen) iframe.requestFullscreen();
+        else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
+      }
+    });
+
+    // Click the video surface to toggle play/pause
+    const hero = document.querySelector('.hero');
+    const heroClick = document.getElementById('heroClick');
+    let isPaused = false;
+    async function toggle() {
+      if (isPaused) { await player.play(); }
+      else { await player.pause(); }
+    }
+    if (heroClick) heroClick.addEventListener('click', toggle);
+    player.on('pause', () => { isPaused = true; hero && hero.classList.add('paused'); });
+    player.on('play',  () => { isPaused = false; hero && hero.classList.remove('paused'); });
+
+    // Hide the poster only once playback has actually started — avoids
+    // flashing whatever default frame Vimeo picks as its background thumbnail.
+    player.on('playing', () => {
+      if (!hero) return;
+      hero.classList.remove('loading');
+      hero.classList.add('playing-started');
+    });
+
+    // Playbar
+    const pbCur = document.getElementById('pbCur');
+    const pbDur = document.getElementById('pbDur');
+    const pbFill = document.getElementById('pbFill');
+    const pbTrack = document.getElementById('pbTrack');
+    const pbReplay = document.getElementById('pbReplay');
+    let duration = 0;
+    let scrubbing = false;
+
+    function fmt(s) {
+      if (!isFinite(s) || s < 0) s = 0;
+      const m = Math.floor(s / 60);
+      const ss = Math.floor(s % 60);
+      return m + ':' + String(ss).padStart(2, '0');
+    }
+
+    player.getDuration().then(d => { duration = d; pbDur.textContent = fmt(d); }).catch(()=>{});
+    player.on('loaded', () => {
+      player.getDuration().then(d => { duration = d; pbDur.textContent = fmt(d); });
+    });
+    player.on('timeupdate', (e) => {
+      if (scrubbing) return;
+      duration = e.duration || duration;
+      const pct = duration ? (e.seconds / duration) * 100 : 0;
+      pbFill.style.width = pct + '%';
+      pbCur.textContent = fmt(e.seconds);
+      if (!pbDur.textContent || pbDur.textContent === '0:00') pbDur.textContent = fmt(duration);
+    });
+
+    function seekFromEvent(ev) {
+      const rect = pbTrack.getBoundingClientRect();
+      const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+      const pct = Math.max(0, Math.min(1, x / rect.width));
+      pbFill.style.width = (pct * 100) + '%';
+      if (duration) pbCur.textContent = fmt(pct * duration);
+      return pct;
+    }
+    pbTrack.addEventListener('pointerdown', (ev) => {
+      scrubbing = true;
+      hero && hero.classList.add('scrubbing');
+      pbTrack.setPointerCapture(ev.pointerId);
+      const pct = seekFromEvent(ev);
+      if (duration) player.setCurrentTime(pct * duration);
+    });
+    pbTrack.addEventListener('pointermove', (ev) => {
+      if (!scrubbing) return;
+      const pct = seekFromEvent(ev);
+      if (duration) player.setCurrentTime(pct * duration);
+    });
+    pbTrack.addEventListener('pointerup', (ev) => {
+      if (!scrubbing) return;
+      scrubbing = false;
+      hero && hero.classList.remove('scrubbing');
+      try { pbTrack.releasePointerCapture(ev.pointerId); } catch(e) {}
+    });
+
+    pbReplay.addEventListener('click', async () => {
+      await player.setCurrentTime(0);
+      await player.play();
+    });
+
+    // Spacebar toggles play/pause when the hero is visible in the viewport
+    // (or always when in fullscreen). Avoids stealing the key while typing.
+    window.addEventListener('keydown', (e) => {
+      if (e.code !== 'Space') return;
+      const tag = (document.activeElement && document.activeElement.tagName) || '';
+      if (/INPUT|TEXTAREA|SELECT/.test(tag) || (document.activeElement && document.activeElement.isContentEditable)) return;
+      const rect = hero.getBoundingClientRect();
+      const visible = rect.bottom > 80 && rect.top < window.innerHeight - 80;
+      const fs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      if (!visible && !fs) return;
+      e.preventDefault();
+      toggle();
+    });
+
+    // Idle-hide: hide the playbar (and cursor in fullscreen) after no
+    // pointer activity for a couple seconds. Show it again on any movement.
+    let idleTimer = null;
+    function wake() {
+      hero.classList.add('show-controls');
+      hero.classList.remove('fs-idle');
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        hero.classList.remove('show-controls');
+        const fs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        if (fs) hero.classList.add('fs-idle');
+      }, 2500);
+    }
+    ['mousemove', 'pointermove', 'touchstart', 'keydown'].forEach(evt => {
+      hero.addEventListener(evt, wake, { passive: true });
+    });
+    document.addEventListener('fullscreenchange', wake);
+    document.addEventListener('webkitfullscreenchange', wake);
+
+    // Auto-pause when the hero scrolls out of view; auto-resume when it
+    // comes back (only if the user hadn't manually paused it first).
+    let pausedByScroll = false;
+    let userPaused = false;
+    heroClick && heroClick.addEventListener('click', () => {
+      // Track manual pause intent so we don't auto-resume against user's wish
+      userPaused = !isPaused ? true : false;
+    });
+    const io = new IntersectionObserver((entries) => {
+      const e = entries[0];
+      const fs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      if (fs) return; // never auto-pause in fullscreen
+      if (e.intersectionRatio < 0.25) {
+        if (!isPaused) {
+          pausedByScroll = true;
+          player.pause();
+        }
+      } else if (e.intersectionRatio > 0.5) {
+        if (pausedByScroll && !userPaused) {
+          pausedByScroll = false;
+          player.play();
+        }
+      }
+    }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
+    io.observe(hero);
+  })();
+
+  /* ==========================================================
+     NAV SCROLL STATE
+     ========================================================== */
+  (function(){
+    const nav = document.querySelector('nav.top');
+    if (!nav) return;
+    let ticking = false;
+    function update() {
+      if (window.scrollY > 24) nav.classList.add('scrolled');
+      else nav.classList.remove('scrolled');
+      ticking = false;
+    }
+    window.addEventListener('scroll', () => {
+      if (!ticking) { requestAnimationFrame(update); ticking = true; }
+    }, { passive: true });
+    update();
+  })();
+
+  /* ==========================================================
+     LIVE CLOCK
+     ========================================================== */
+  function tick() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    document.getElementById('clock').textContent =
+      `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} NYC`;
+  }
+  setInterval(tick, 1000); tick();
+</script>
+
+</body>
+</html>
